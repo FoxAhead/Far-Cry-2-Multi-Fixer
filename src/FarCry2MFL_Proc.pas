@@ -30,9 +30,11 @@ type
   end;
 
 var
-  ExeName: string;                        // = 'D:\GAMES\Civilization II Multiplayer Gold Edition\FarCry2.exe';
+  FarCry2ExeName: string;
+  DuniaDllName: string;
   DllName: string;
   DllLoaded: Boolean;
+  DllLoadingError: Boolean;
   LogMemo: TMemo;
   DebugEnabled: Boolean;
   WaitProcess: Boolean;
@@ -69,6 +71,10 @@ procedure SaveOptionsToINI();
 procedure SetFileNameIfExist(var Variable: string; FileName: string);
 
 procedure ShowOptionsDialog();
+
+procedure SetDuniaDllName();
+
+function GetGameVersion(): Integer;
 
 //--------------------------------------------------------------------------------------------------
 implementation
@@ -250,23 +256,25 @@ var
 begin
   CoInitialize(nil);
   MyPath := ExtractFilePath(Application.ExeName);
-  SetFileNameIfExist(ExeName, MyPath + 'FarCry2.exe');
+  SetFileNameIfExist(FarCry2ExeName, MyPath + 'FarCry2.exe');
   SetFileNameIfExist(DllName, MyPath + 'FarCry2MF.dll');
   for i := 1 to ParamCount do
   begin
     if ParamStr(i) = '-exe' then
-      SetFileNameIfExist(ExeName, ParamStr(i + 1));
+      SetFileNameIfExist(FarCry2ExeName, ParamStr(i + 1));
     if ParamStr(i) = '-dll' then
       SetFileNameIfExist(DllName, ParamStr(i + 1));
   end;
-  if ExeName = '' then
+  if FarCry2ExeName = '' then
   begin
-    SetFileNameIfExist(ExeName, GetInstallLocation() + '\FarCry2.exe');
+    SetFileNameIfExist(FarCry2ExeName, GetInstallLocation() + '\FarCry2.exe');
   end;
+
+  SetDuniaDllName();
 
   DebugEnabled := FindCmdLineSwitch('debug');
   WaitProcess := FindCmdLineSwitch('wait');
-  Result := (ExeName <> '') and (DllName <> '');
+  Result := (FarCry2ExeName <> '') and (DuniaDllName <> '') and (DllName <> '');
   LoadFormOptionsFromXML();
   LoadOptionsFromINI();
 end;
@@ -311,9 +319,10 @@ var
 begin
   try
     DllLoaded := False;
-    FileName := ExeName;
-    CommandLine := ExeName + ' -GameProfile_SkipIntroMovies 1';
-    Path := ExtractFilePath(ExeName);
+    DllLoadingError := False;
+    FileName := FarCry2ExeName;
+    CommandLine := FarCry2ExeName + ' -GameProfile_SkipIntroMovies 1';
+    Path := ExtractFilePath(FarCry2ExeName);
     ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
     StartupInfo.cb := SizeOf(StartupInfo);
     ZeroMemory(@ProcessInformation, SizeOf(ProcessInformation));
@@ -340,10 +349,10 @@ begin
     Log('BytesWritten ' + IntToStr(BytesWritten));
     if ResumeThread(ProcessInformation.hThread) = $FFFFFFFF then
       raise Exception.Create('ResumeThread: ' + IntToStr(GetLastError()));
-    for i := 1 to 6000 do
+    for i := 1 to 50 do
     begin
       Application.ProcessMessages();
-      if DllLoaded then
+      if DllLoaded or DllLoadingError then
         Break;
       Sleep(100);
     end;
@@ -376,12 +385,13 @@ end;
 
 function Check(): Boolean;
 begin
-  if not FileExists(ExeName) then
-    raise Exception.Create('Game exe file ' + ExeName + 'does not exist');
+  if not FileExists(FarCry2ExeName) then
+    raise Exception.Create('Game exe file ' + FarCry2ExeName + 'does not exist');
+  if not FileExists(DuniaDllName) then
+    raise Exception.Create('Game engine file ' + DuniaDllName + 'does not exist');
   if not FileExists(DllName) then
     raise Exception.Create('Dll file ' + DllName + 'does not exist');
-  if GetFileSize(ExeName) <> 28296 then
-    raise Exception.Create('Wrong size of game exe file. Game version Multiplayer Gold Edition 5.4.0f (Patch 3) supported only.');
+  Options.Version := GetGameVersion();
   Result := True;
 end;
 
@@ -478,6 +488,54 @@ begin
     end;
   end;
   FormOptions.Free;
+end;
+
+procedure SetDuniaDllName();
+var
+  GamePath: string;
+begin
+  if FarCry2ExeName <> '' then
+  begin
+    GamePath := ExtractFilePath(FarCry2ExeName);
+    SetFileNameIfExist(DuniaDllName, GamePath + '\Dunia.dll');
+  end;
+end;
+
+function GetGameVersion(): Integer;
+var
+  FarCry2ExeSize: Integer;
+  DuniaDllSize: Integer;
+  FileStream: TFileStream;
+  UpdateVersionPosition: Integer;
+  UpdateVersion: array[0..3] of Char;
+  GameVersion: Integer;
+begin
+  Result := 0;
+  FarCry2ExeSize := GetFileSize(FarCry2ExeName);
+  DuniaDllSize := GetFileSize(DuniaDllName);
+  if FarCry2ExeSize <> 28296 then
+    raise Exception.Create('Wrong size of FarCry2.exe file. Game version v1.03 supported only.');
+  case DuniaDllSize of
+    20183176:
+      begin
+        GameVersion := GAME_VERSION_STEAM;
+        UpdateVersionPosition := $00E37F54;
+      end;
+    19412104:
+      begin
+        GameVersion := GAME_VERSION_RETAIL;
+        UpdateVersionPosition := $00DB1FC4;
+      end;
+  else
+    raise Exception.Create('Wrong size of Dunia.dll file. Game version v1.03 supported only.');
+  end;
+  FileStream := TFileStream.Create(DuniaDllName, fmOpenRead or fmShareDenyNone);
+  FileStream.Seek(UpdateVersionPosition, soFromBeginning);
+  FileStream.ReadBuffer(UpdateVersion, 4);
+  FileStream.Free;
+  if UpdateVersion <> '1.03' then
+    raise Exception.Create('Wrong version of Dunia.dll file. Game version v1.03 supported only.');
+  Result := GameVersion;
 end;
 
 procedure FormOptionsAddSubItems(Nodes: IXMLNodeList; var SubItems: TOptionSubItems);

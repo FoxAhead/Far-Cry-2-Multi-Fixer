@@ -77,7 +77,8 @@ begin
   if OpenDialogExe.Execute then
   begin
     EditExe.Text := OpenDialogExe.FileName;
-    ExeName := OpenDialogExe.FileName;
+    FarCry2ExeName := OpenDialogExe.FileName;
+    SetDuniaDllName();
   end;
 end;
 
@@ -96,6 +97,8 @@ begin
   Log(IntToStr(MessagesCounter) + '. Recieved message: wParam = ' + IntToHex(MSG.WParam, 4) + ', lParam = ' + IntToHex(MSG.LParam, 4));
   if (MSG.WParam = 0) and (MSG.LParam = 0) then
     DllLoaded := True;
+  if (not DllLoaded) and (MSG.WParam = -1) and (MSG.LParam = -1) then
+    DllLoadingError := True;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -103,7 +106,7 @@ var
   Terminating: Boolean;
 begin
   Terminating := False;
-  EditExe.Text := ExeName;
+  EditExe.Text := FarCry2ExeName;
   EditDll.Text := DllName;
   LogMemo := Memo1;
 
@@ -152,10 +155,10 @@ var
 begin
   if SaveDialogLnk.Execute() then
   begin
-    Arguments := '-play -exe "' + ExeName + '" -dll "' + DllName + '"';
+    Arguments := '-play -exe "' + FarCry2ExeName + '" -dll "' + DllName + '"';
     if DebugEnabled then
       Arguments := '-debug ' + Arguments;
-    CreateLnk(SaveDialogLnk.FileName, Application.ExeName, ExtractFilePath(ExeName), 'Play Far Cry 2 with Multi Fixer', Arguments);
+    CreateLnk(SaveDialogLnk.FileName, Application.ExeName, ExtractFilePath(FarCry2ExeName), 'Play Far Cry 2 with Multi Fixer', Arguments);
   end;
 end;
 
@@ -253,4 +256,3 @@ begin
 end;
 
 end.
-

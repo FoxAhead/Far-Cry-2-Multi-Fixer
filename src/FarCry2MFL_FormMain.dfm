@@ -120,9 +120,7 @@ object Form1: TForm1
         'You can create shortcut to start game immediately. All selected ' +
         'paths will be saved in shortcut.'
       ''
-      'Supported game versions:'
-      '  Steam v1.03'
-      '  Retail (GOG) v1.03')
+      'Supported game version is v1.03 - both Steam and GOG.')
     ParentFont = False
     ReadOnly = True
     ScrollBars = ssVertical

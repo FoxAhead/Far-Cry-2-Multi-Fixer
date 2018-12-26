@@ -11,15 +11,9 @@ library FarCry2MF;
   using PChar or ShortString parameters. }
 
 uses
-  Classes,
-  Graphics,
-  Math,
   Messages,
-  MMSystem,
-  ShellAPI,
   SysUtils,
   Windows,
-  WinSock,
   FarCry2Types in 'FarCry2Types.pas',
   FarCry2Proc in 'FarCry2Proc.pas',
   FarCry2MF_Types in 'FarCry2MF_Types.pas',
@@ -29,7 +23,9 @@ uses
 {$R *.res}
 
 var
-  GfFOV: Single = 90.0;
+  GVer: Integer;
+  GfFOV: Single;
+  GfFOVRet: Integer;
 
 procedure SendMessageToLoader(WParam: Integer; LParam: Integer); stdcall;
 var
@@ -52,8 +48,8 @@ end;
 
 procedure PatchCalcFov; register;
 asm
-    movss  xmm0, GfFOV
-    push $10504CC6
+    movss xmm0, GfFOV
+    push  GfFOVRet
     ret
 end;
 
@@ -67,26 +63,34 @@ end;
 
 procedure Attach(HProcess: Cardinal);
 begin
+  GVer := FC2MFOptions.Version;
   if FC2MFOptions.bJackalTapesFix then
   begin
-    WriteMemory(HProcess, $1074E465, [$14]);
+    WriteMemory(HProcess, GAddr[GVer, 1], [$14]);
   end;
   if FC2MFOptions.bPredecessorTapesUnlock then
   begin
-    WriteMemory(HProcess, $102E1D15, [$EB, $0E]);
+    case GVer of
+      GAME_VERSION_STEAM:
+        WriteMemory(HProcess, GAddr[GVer, 2], [$EB, $0E]);
+      GAME_VERSION_RETAIL:
+        WriteMemory(HProcess, GAddr[GVer, 2], [$B0, $01]);
+    end;
   end;
   if FC2MFOptions.bMachetesUnlock then
   begin
-    WriteMemory(HProcess, $10048939, [$B0, $01]);
+    SendMessageToLoader(GVer, GAddr[GVer, 3]);
+    WriteMemory(HProcess, GAddr[GVer, 3], [$B0, $01]);
   end;
   if FC2MFOptions.bNoBlinkingItems then
   begin
-    WriteMemory(HProcess, $10E49D08, [$2E]);
+    WriteMemory(HProcess, GAddr[GVer, 4], [$2E]);
   end;
   if FC2MFOptions.bFOV then
   begin
-    WriteMemory(HProcess, $10504CC0, [OP_NOP, OP_JMP], @PatchCalcFov);
+    WriteMemory(HProcess, GAddr[GVer, 5], [OP_NOP, OP_JMP], @PatchCalcFov);
     GfFOV := FC2MFOptions.iFOV;
+    GfFOVRet := GAddr[GVer, 6];
   end;
   {if FC2MFOptions.bTest1 then
   begin
@@ -106,9 +110,13 @@ begin
     DLL_PROCESS_ATTACH:
       begin
         HProcess := OpenProcess(PROCESS_ALL_ACCESS, False, GetCurrentProcessId());
-        Attach(HProcess);
+        try
+          Attach(HProcess);
+          SendMessageToLoader(0, 0);
+        except
+          SendMessageToLoader(-1, -1);
+        end;
         CloseHandle(HProcess);
-        SendMessageToLoader(0, 0);
       end;
     DLL_PROCESS_DETACH:
       ;
