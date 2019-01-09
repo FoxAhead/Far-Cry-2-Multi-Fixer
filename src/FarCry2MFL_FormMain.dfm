@@ -104,8 +104,8 @@ object Form1: TForm1
       'Features can be switched in '#39'Options...'#39' dialog.'
       ''
       
-        'This launcher will search for FarCry2.EXE and FarCry2MF.DLL file' +
-        's and try to set all paths '
+        'This launcher will search for FarCry2.EXE, Dunia.DLL and FarCry2' +
+        'MF.DLL files and try to set all paths '
       'automatically.'
       ''
       

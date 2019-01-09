@@ -402,11 +402,11 @@ end;
 function Check(): Boolean;
 begin
   if not FileExists(FarCry2ExeName) then
-    raise Exception.Create('Game exe file ' + FarCry2ExeName + 'does not exist');
+    raise Exception.Create('Game exe file ' + FarCry2ExeName + 'does not exist (FarCry2.exe not found)');
   if not FileExists(DuniaDllName) then
-    raise Exception.Create('Game engine file ' + DuniaDllName + 'does not exist');
+    raise Exception.Create('Game engine file ' + DuniaDllName + 'does not exist (Dunia.dll not found)');
   if not FileExists(DllName) then
-    raise Exception.Create('Dll file ' + DllName + 'does not exist');
+    raise Exception.Create('Dll file ' + DllName + 'does not exist (FarCry2MF.dll not found)');
   Options.Version := GetGameVersion();
   Result := True;
 end;
