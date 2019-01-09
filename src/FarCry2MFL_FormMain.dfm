@@ -58,7 +58,7 @@ object Form1: TForm1
     Width = 75
     Height = 13
     Anchors = [akLeft, akBottom]
-    Caption = '2018 FoxAhead'
+    Caption = '2019 FoxAhead'
     Enabled = False
   end
   object LabelGitHub: TLabel
@@ -233,7 +233,7 @@ object Form1: TForm1
     Top = 32
   end
   object SaveDialogLnk: TSaveDialog
-    FileName = 'Civ2 with UI Additions.lnk'
+    FileName = 'Far Cry 2 with Multi Fixer.lnk'
     Filter = '*.lnk|*.lnk'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
     Left = 184

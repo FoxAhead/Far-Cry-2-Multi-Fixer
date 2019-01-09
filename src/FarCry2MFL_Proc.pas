@@ -321,7 +321,23 @@ begin
     DllLoaded := False;
     DllLoadingError := False;
     FileName := FarCry2ExeName;
-    CommandLine := FarCry2ExeName + ' -GameProfile_SkipIntroMovies 1';
+    CommandLine := FarCry2ExeName;
+    if Options.bSkipIntroMovies then
+      CommandLine := CommandLine + ' -GameProfile_SkipIntroMovies 1';
+    if Options.bMaxFps then
+      CommandLine := CommandLine + ' -RenderProfile_MaxFps ' + IntToStr(Options.iMaxFps);
+
+    if Options.bAllWeaponsUnlock then
+      CommandLine := CommandLine + ' -GameProfile_AllWeaponsUnlock 1';
+    if Options.bUnlimitedReliability then
+      CommandLine := CommandLine + ' -GameProfile_UnlimitedReliability 1';
+    if Options.bUnlimitedAmmo then
+      CommandLine := CommandLine + ' -GameProfile_UnlimitedAmmo 1';
+    if Options.bGodMode then
+      CommandLine := CommandLine + ' -GameProfile_GodMode 1';
+    if Options.bZombieAI then
+      CommandLine := CommandLine + ' -zombieai 1';
+
     Path := ExtractFilePath(FarCry2ExeName);
     ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
     StartupInfo.cb := SizeOf(StartupInfo);
@@ -349,7 +365,7 @@ begin
     Log('BytesWritten ' + IntToStr(BytesWritten));
     if ResumeThread(ProcessInformation.hThread) = $FFFFFFFF then
       raise Exception.Create('ResumeThread: ' + IntToStr(GetLastError()));
-    for i := 1 to 50 do
+    for i := 1 to 600 do
     begin
       Application.ProcessMessages();
       if DllLoaded or DllLoadingError then
@@ -634,10 +650,22 @@ begin
     Result := Options.bFOV;
   if Key = 'iFOV' then
     Result := Options.iFOV;
-  if Key = 'bTest1' then
-    Result := Options.bTest1;
-  if Key = 'bTest2' then
-    Result := Options.bTest2;
+  if Key = 'bSkipIntroMovies' then
+    Result := Options.bSkipIntroMovies;
+  if Key = 'bMaxFps' then
+    Result := Options.bMaxFps;
+  if Key = 'iMaxFps' then
+    Result := Options.iMaxFps;
+  if Key = 'bAllWeaponsUnlock' then
+    Result := Options.bAllWeaponsUnlock;
+  if Key = 'bUnlimitedReliability' then
+    Result := Options.bUnlimitedReliability;
+  if Key = 'bUnlimitedAmmo' then
+    Result := Options.bUnlimitedAmmo;
+  if Key = 'bGodMode' then
+    Result := Options.bGodMode;
+  if Key = 'bZombieAI' then
+    Result := Options.bZombieAI;
 end;
 
 procedure SetOptionByKey(Key: string; Value: Variant);
@@ -654,10 +682,22 @@ begin
     Options.bFOV := Value;
   if Key = 'iFOV' then
     Options.iFOV := Value;
-  if Key = 'bTest1' then
-    Options.bTest1 := Value;
-  if Key = 'bTest2' then
-    Options.bTest2 := Value;
+  if Key = 'bSkipIntroMovies' then
+    Options.bSkipIntroMovies := Value;
+  if Key = 'bMaxFps' then
+    Options.bMaxFps := Value;
+  if Key = 'iMaxFps' then
+    Options.iMaxFps := Value;
+  if Key = 'bAllWeaponsUnlock' then
+    Options.bAllWeaponsUnlock := Value;
+  if Key = 'bUnlimitedReliability' then
+    Options.bUnlimitedReliability := Value;
+  if Key = 'bUnlimitedAmmo' then
+    Options.bUnlimitedAmmo := Value;
+  if Key = 'bGodMode' then
+    Options.bGodMode := Value;
+  if Key = 'bZombieAI' then
+    Options.bZombieAI := Value;
 end;
 
 end.
