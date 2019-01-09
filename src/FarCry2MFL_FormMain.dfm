@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 485
-  Top = 313
+  Left = 376
+  Top = 442
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'Far Cry 2 Multi Fixer Launcher'
@@ -33,14 +33,6 @@ object Form1: TForm1
     Width = 28
     Height = 13
     Caption = 'Game'
-  end
-  object LabelDll: TLabel
-    Tag = 1
-    Left = 8
-    Top = 36
-    Width = 12
-    Height = 13
-    Caption = 'Dll'
   end
   object LabelVersion: TLabel
     Left = 470
@@ -90,9 +82,9 @@ object Form1: TForm1
   end
   object Memo1: TMemo
     Left = 4
-    Top = 60
+    Top = 32
     Width = 505
-    Height = 201
+    Height = 229
     TabStop = False
     Anchors = [akLeft, akTop, akRight, akBottom]
     Font.Charset = DEFAULT_CHARSET
@@ -152,7 +144,7 @@ object Form1: TForm1
     Font.Style = []
     ParentFont = False
     ReadOnly = True
-    TabOrder = 6
+    TabOrder = 5
   end
   object ButtonStart: TButton
     Left = 300
@@ -172,34 +164,6 @@ object Form1: TForm1
     TabOrder = 1
     OnClick = ButtonStartClick
   end
-  object EditDll: TEdit
-    Tag = 1
-    Left = 44
-    Top = 32
-    Width = 393
-    Height = 21
-    TabStop = False
-    AutoSize = False
-    Color = clBtnFace
-    Font.Charset = RUSSIAN_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = []
-    ParentFont = False
-    ReadOnly = True
-    TabOrder = 7
-  end
-  object ButtonBrowseDll: TButton
-    Tag = 1
-    Left = 444
-    Top = 30
-    Width = 65
-    Height = 25
-    Caption = 'Browse...'
-    TabOrder = 3
-    OnClick = ButtonBrowseDllClick
-  end
   object ButtonShortcut: TButton
     Left = 192
     Top = 268
@@ -207,7 +171,7 @@ object Form1: TForm1
     Height = 25
     Anchors = [akBottom]
     Caption = 'Create shortcut...'
-    TabOrder = 5
+    TabOrder = 4
     OnClick = ButtonShortcutClick
   end
   object ButtonOptions: TButton
@@ -217,20 +181,14 @@ object Form1: TForm1
     Height = 25
     Anchors = [akBottom]
     Caption = 'Options...'
-    TabOrder = 4
+    TabOrder = 3
     OnClick = ButtonOptionsClick
   end
   object OpenDialogExe: TOpenDialog
-    Filter = '*.exe|*.exe'
+    Filter = 'FarCry2.exe|FarCry2.exe|*.exe|*.exe'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
     Left = 404
     Top = 4
-  end
-  object OpenDialogDll: TOpenDialog
-    Filter = '*.dll|*.dll'
-    Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    Left = 404
-    Top = 32
   end
   object SaveDialogLnk: TSaveDialog
     FileName = 'Far Cry 2 with Multi Fixer.lnk'

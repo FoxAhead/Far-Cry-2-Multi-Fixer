@@ -79,7 +79,6 @@ begin
   end;
   if FC2MFOptions.bMachetesUnlock then
   begin
-    SendMessageToLoader(GVer, GAddr[GVer, 3]);
     WriteMemory(HProcess, GAddr[GVer, 3], [$B0, $01]);
   end;
   if FC2MFOptions.bNoBlinkingItems then

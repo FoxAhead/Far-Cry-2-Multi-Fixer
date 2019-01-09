@@ -21,11 +21,7 @@ type
     ButtonBrowseExe: TButton;
     EditExe: TEdit;
     ButtonStart: TButton;
-    EditDll: TEdit;
-    ButtonBrowseDll: TButton;
-    OpenDialogDll: TOpenDialog;
     LabelExe: TLabel;
-    LabelDll: TLabel;
     ButtonShortcut: TButton;
     LabelVersion: TLabel;
     SaveDialogLnk: TSaveDialog;
@@ -35,7 +31,6 @@ type
     Timer1: TTimer;
     ButtonOptions: TButton;
     procedure ButtonBrowseExeClick(Sender: TObject);
-    procedure ButtonBrowseDllClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure ButtonStartClick(Sender: TObject);
     procedure ButtonShortcutClick(Sender: TObject);
@@ -76,18 +71,9 @@ procedure TForm1.ButtonBrowseExeClick(Sender: TObject);
 begin
   if OpenDialogExe.Execute then
   begin
-    EditExe.Text := OpenDialogExe.FileName;
     FarCry2ExeName := OpenDialogExe.FileName;
+    EditExe.Text := FarCry2ExeName;
     SetDuniaDllName();
-  end;
-end;
-
-procedure TForm1.ButtonBrowseDllClick(Sender: TObject);
-begin
-  if OpenDialogDll.Execute then
-  begin
-    EditDll.Text := OpenDialogDll.FileName;
-    DllName := OpenDialogDll.FileName;
   end;
 end;
 
@@ -107,7 +93,6 @@ var
 begin
   Terminating := False;
   EditExe.Text := FarCry2ExeName;
-  EditDll.Text := DllName;
   LogMemo := Memo1;
 
   if IsSilentLaunch() then
@@ -189,6 +174,9 @@ begin
 end;
 
 procedure TForm1.AdjustFormLayout;
+const
+  HiddenElementsHeight: Integer = 28;
+  HeightDelta: Integer = 96;
 var
   FarCry2Running: Boolean;
   I: Integer;
@@ -208,25 +196,22 @@ begin
       if Components[I].Tag = 1 then
       begin
         LabelExe.Visible := not DebugLayout;
-        LabelDll.Visible := not DebugLayout;
         EditExe.Visible := not DebugLayout;
-        EditDll.Visible := not DebugLayout;
         ButtonBrowseExe.Visible := not DebugLayout;
-        ButtonBrowseDll.Visible := not DebugLayout;
       end;
     if DebugLayout then
     begin
-      ClientHeight := 201;
-      Memo1.Top := 4;
-      Memo1.Height := 161;
+      ClientHeight := ClientHeight - HeightDelta;
+      Memo1.Top := Memo1.Top - HiddenElementsHeight;
+      Memo1.Height := Memo1.Height + HiddenElementsHeight;
       Left := 0;
       Top := Monitor.Height - Height;
     end
     else
     begin
-      ClientHeight := 297;
-      Memo1.Top := 60;
-      Memo1.Height := 201;
+      ClientHeight := ClientHeight + HeightDelta;
+      Memo1.Top := Memo1.Top + HiddenElementsHeight;
+      Memo1.Height := Memo1.Height - HiddenElementsHeight;
       if Left < 0 then
         Left := 0;
       if Top < 0 then
