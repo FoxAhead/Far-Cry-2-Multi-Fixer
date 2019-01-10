@@ -113,7 +113,7 @@ RootDir=
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
-MinorVer=0
+MinorVer=1
 Release=0
 Build=25
 Debug=0
@@ -126,7 +126,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=
 FileDescription=
-FileVersion=1.0.0.25
+FileVersion=1.1.0.25
 InternalName=
 LegalCopyright=
 LegalTrademarks=
