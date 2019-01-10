@@ -113,7 +113,12 @@ begin
           Attach(HProcess);
           SendMessageToLoader(0, 0);
         except
-          SendMessageToLoader(-1, -1);
+          on E: Exception do
+          begin
+            SendMessageToLoader(-1, GErrorCode);
+            SendMessageToLoader(-1, GLastError);
+            SendMessageToLoader(-1, -1);
+          end;
         end;
         CloseHandle(HProcess);
       end;

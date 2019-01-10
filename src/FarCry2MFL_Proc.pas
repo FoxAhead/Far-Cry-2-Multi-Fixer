@@ -366,15 +366,18 @@ begin
     if not WriteProcessMemory(ProcessInformation.hProcess, FC2MFOPtions, @Options, SizeOf(Options), BytesWritten) then
       raise Exception.Create('WriteProcessMemory2: ' + IntToStr(GetLastError()));
     Log('BytesWritten ' + IntToStr(BytesWritten));
+
+    DllLoadingState := dlsLoading;
+
     if ResumeThread(ProcessInformation.hThread) = $FFFFFFFF then
       raise Exception.Create('ResumeThread: ' + IntToStr(GetLastError()));
-    DllLoadingState := dlsLoading;
 
     ShowProgressDialog(10);
 
+    if DllLoadingState = dlsError then
+      raise Exception.Create('There was an error while loading dll');
     if DllLoadingState <> dlsOK then
       raise Exception.Create('Dll not loaded');
-
     if SuspendThread(ProcessInformation.hThread) = $FFFFFFFF then
       raise Exception.Create('SuspendThread: ' + IntToStr(GetLastError()));
     if not WriteProcessMemory(ProcessInformation.hProcess, Pointer(EntryPointAddress), @SavedBytes, SizeOf(SavedBytes), BytesWritten) then
@@ -540,9 +543,9 @@ begin
   FarCry2ExeSize := GetFileSize(FarCry2ExeName);
   DuniaDllSize := GetFileSize(DuniaDllName);
   if FarCry2ExeSize <> 28296 then
-    raise Exception.Create('Wrong size of FarCry2.exe file. Game version v1.03 supported only.');
+    raise Exception.Create(Format('Wrong size of FarCry2.exe file (%d). Game version v1.03 supported only.', [FarCry2ExeSize]));
   case DuniaDllSize of
-    20183176:
+    20183176, 20184168:
       begin
         GameVersion := GAME_VERSION_STEAM;
         UpdateVersionPosition := $00E37F54;
@@ -553,7 +556,7 @@ begin
         UpdateVersionPosition := $00DB1FC4;
       end;
   else
-    raise Exception.Create('Wrong size of Dunia.dll file. Game version v1.03 supported only.');
+    raise Exception.Create(Format('Wrong size of Dunia.dll file (%d). Game version v1.03 supported only.', [DuniaDllSize]));
   end;
   FileStream := TFileStream.Create(DuniaDllName, fmOpenRead or fmShareDenyNone);
   FileStream.Seek(UpdateVersionPosition, soFromBeginning);

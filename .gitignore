@@ -68,3 +68,6 @@ __recovery/
 *.lnk
 
 *.ini
+
+# Document
+*.docx
