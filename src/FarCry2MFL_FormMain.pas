@@ -81,10 +81,13 @@ procedure TForm1.OnMessage(var MSG: TMessage);
 begin
   Inc(MessagesCounter);
   Log(IntToStr(MessagesCounter) + '. Recieved message: wParam = ' + IntToHex(MSG.WParam, 4) + ', lParam = ' + IntToHex(MSG.LParam, 4));
-  if (MSG.WParam = 0) and (MSG.LParam = 0) then
-    DllLoaded := True;
-  if (not DllLoaded) and (MSG.WParam = -1) and (MSG.LParam = -1) then
-    DllLoadingError := True;
+  if DllLoadingState = dlsLoading then
+  begin
+    if (MSG.WParam = 0) and (MSG.LParam = 0) then
+      DllLoadingState := dlsOK;
+    if (MSG.WParam = -1) and (MSG.LParam = -1) then
+      DllLoadingState := dlsError;
+  end;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);

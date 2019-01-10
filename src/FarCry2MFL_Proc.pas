@@ -29,12 +29,13 @@ type
     OptionSubItems: TOptionSubItems;
   end;
 
+  TDllLoadingState = (dlsNone, dlsLoading, dlsOK, dlsError);
+
 var
   FarCry2ExeName: string;
   DuniaDllName: string;
   DllName: string;
-  DllLoaded: Boolean;
-  DllLoadingError: Boolean;
+  DllLoadingState: TDllLoadingState;
   LogMemo: TMemo;
   DebugEnabled: Boolean;
   WaitProcess: Boolean;
@@ -72,6 +73,8 @@ procedure SetFileNameIfExist(var Variable: string; FileName: string);
 
 procedure ShowOptionsDialog();
 
+procedure ShowProgressDialog(TimeOut: Integer);
+
 procedure SetDuniaDllName();
 
 function GetGameVersion(): Integer;
@@ -84,6 +87,7 @@ uses
   ActiveX,
   FarCry2MF_Options,
   FarCry2MFL_FormOptions,
+  FarCry2MFL_FormProgress,
   FarCry2MFL_InstallSearch,
   ComObj,
   Classes,
@@ -318,8 +322,7 @@ var
   i: Integer;
 begin
   try
-    DllLoaded := False;
-    DllLoadingError := False;
+    DllLoadingState := dlsNone;
     FileName := FarCry2ExeName;
     CommandLine := FarCry2ExeName;
     if Options.bSkipIntroMovies then
@@ -365,14 +368,11 @@ begin
     Log('BytesWritten ' + IntToStr(BytesWritten));
     if ResumeThread(ProcessInformation.hThread) = $FFFFFFFF then
       raise Exception.Create('ResumeThread: ' + IntToStr(GetLastError()));
-    for i := 1 to 600 do
-    begin
-      Application.ProcessMessages();
-      if DllLoaded or DllLoadingError then
-        Break;
-      Sleep(100);
-    end;
-    if not DllLoaded then
+    DllLoadingState := dlsLoading;
+
+    ShowProgressDialog(10);
+
+    if DllLoadingState <> dlsOK then
       raise Exception.Create('Dll not loaded');
 
     if SuspendThread(ProcessInformation.hThread) = $FFFFFFFF then
@@ -504,6 +504,16 @@ begin
     end;
   end;
   FormOptions.Free;
+end;
+
+procedure ShowProgressDialog(TimeOut: Integer);
+var
+  FormProgress: TFormProgress;
+begin
+  FormProgress := TFormProgress.Create(Application);
+  FormProgress.StartTimer(TimeOut);
+  FormProgress.ShowModal();
+  FormProgress.Free;
 end;
 
 procedure SetDuniaDllName();

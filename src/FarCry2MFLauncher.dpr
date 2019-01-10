@@ -8,6 +8,7 @@ uses
   FarCry2MFL_Proc in 'FarCry2MFL_Proc.pas',
   FarCry2MFL_FormMain in 'FarCry2MFL_FormMain.pas' {Form1},
   FarCry2MFL_FormOptions in 'FarCry2MFL_FormOptions.pas' {FormOptions},
+  FarCry2MFL_FormProgress in 'FarCry2MFL_FormProgress.pas' {FormProgress},
   FarCry2MFL_InstallSearch in 'FarCry2MFL_InstallSearch.pas';
 
 {$R *.res}
