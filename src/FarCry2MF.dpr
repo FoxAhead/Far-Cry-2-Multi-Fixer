@@ -25,6 +25,7 @@ uses
 var
   GVer: Integer;
   GfFOV: Single;
+  GfFOVVehicle: Single;
   GfFOVRet: Integer;
 
 procedure SendMessageToLoader(WParam: Integer; LParam: Integer); stdcall;
@@ -51,6 +52,37 @@ asm
     movss xmm0, GfFOV
     push  GfFOVRet
     ret
+end;
+
+procedure PatchLoadVehicleFovAngle; register;
+asm
+    mov   edx, [esp + 4]
+    lea   eax, [esp + 4]
+    add   edx, 4
+    push  [edx]
+    push  eax
+    push  edx
+    mov   eax, $10234320
+    call  eax
+    pop   ecx
+    test  eax, eax
+    jz    @@loc_10234A53
+    mov   eax, [eax]
+    test  ecx, ecx
+    jz    @@LABEL_NOT_FOVANGLE
+    cmp   ecx, $49745480
+    jne   @@LABEL_NOT_FOVANGLE
+    mov   eax, GfFOVVehicle
+
+@@LABEL_NOT_FOVANGLE:
+    mov   ecx, [esp + 8]
+    mov   [ecx], eax
+    mov   al, 1
+    ret   8
+
+@@loc_10234A53:
+    XOR   al, al
+    ret   8
 end;
 
 {$O+}
@@ -89,7 +121,10 @@ begin
   begin
     WriteMemory(HProcess, GAddr[GVer, 5], [OP_NOP, OP_JMP], @PatchCalcFov);
     GfFOV := FC2MFOptions.iFOV;
+    GfFOVVehicle := FC2MFOptions.iFOV + 15;
     GfFOVRet := GAddr[GVer, 6];
+
+    WriteMemory(HProcess, $10234A30, [OP_JMP], @PatchLoadVehicleFovAngle);
   end;
   {if FC2MFOptions.bTest1 then
   begin
@@ -132,3 +167,4 @@ begin
   DllProc := @DllMain;
   DllProc(DLL_PROCESS_ATTACH);
 end.
+

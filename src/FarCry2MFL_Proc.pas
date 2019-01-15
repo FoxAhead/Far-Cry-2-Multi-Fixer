@@ -339,7 +339,7 @@ begin
     if Options.bGodMode then
       CommandLine := CommandLine + ' -GameProfile_GodMode 1';
     if Options.bZombieAI then
-      CommandLine := CommandLine + ' -zombieai 1';
+      CommandLine := CommandLine + ' -zombieai';
 
     Path := ExtractFilePath(FarCry2ExeName);
     ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
@@ -356,6 +356,8 @@ begin
     Inject.JumpCommand := $EB;
     Inject.JumpOffset := $FE;
     Inject.AddrLoadLibrary := GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA');
+    if Length(DllName) >= Length(Inject.LibraryName) then
+      raise Exception.Create('Too long DllName: ' + DllName);
     StrPCopy(Inject.LibraryName, DllName);
     if not ReadProcessMemory(ProcessInformation.hProcess, Pointer(EntryPointAddress), @SavedBytes, SizeOf(SavedBytes), BytesRead) then
       raise Exception.Create('ReadProcessMemory: ' + IntToStr(GetLastError()));
