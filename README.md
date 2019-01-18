@@ -21,7 +21,7 @@ By clicking the Options button, all options with a description are available for
 
 By default, only the most necessary options are enabled.
 
-In order not to run the utility each time, you can create a shortcut to launch it. To do this, click the Create shortcut... and save the shortcut in a convenient place for you.
+In order not to run the utility each time, you can create a shortcut to launch it. To do this, click the `Create shortcut...` and save the shortcut in a convenient place for you.
 
 ![Screenshot](Screenshots/ShortcutIcon.png?raw=true)
 
