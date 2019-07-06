@@ -13,14 +13,6 @@ type
     bNoBlinkingItems: Boolean;
     bFOV: Boolean;
     iFOV: Integer;
-    bSkipIntroMovies: Boolean;
-    bMaxFps: Boolean;
-    iMaxFps: Integer;
-    bAllWeaponsUnlock: Boolean;
-    bUnlimitedReliability: Boolean;
-    bUnlimitedAmmo: Boolean;
-    bGodMode: Boolean;
-    bZombieAI: Boolean;
   end;
 
 const

@@ -34,5 +34,10 @@ Sets the unlimited ammo cheat." default="0"/>
 Sets the god mode cheat." default="0"/>
 		<boolean key="bZombieAI" name="Zombie AI" description="-zombieai
 NPC will just freeze ignoring the player." default="0"/>
+		<boolean key="bExec" name="Exec" description="-exec FILENAME
+Runs a console command 'batchfile'. This text file can contain list of console commands and will autorun at game start. Unless full path specified, the file must be located at:
+'C:\Users\USERNAME\Documents\My Games\Far Cry 2'" default="0">
+			<string key="sExec" name="Batch file name" default=""/>
+		</boolean>
 	</section>
 </options>

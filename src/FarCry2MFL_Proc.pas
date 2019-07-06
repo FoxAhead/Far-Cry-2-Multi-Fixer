@@ -31,6 +31,20 @@ type
 
   TDllLoadingState = (dlsNone, dlsLoading, dlsOK, dlsError);
 
+  // These parameters no need to pass into DLL
+  TCommandLineOptions = record
+    bSkipIntroMovies: Boolean;
+    bMaxFps: Boolean;
+    iMaxFps: Integer;
+    bAllWeaponsUnlock: Boolean;
+    bUnlimitedReliability: Boolean;
+    bUnlimitedAmmo: Boolean;
+    bGodMode: Boolean;
+    bZombieAI: Boolean;
+    bExec: Boolean;
+    sExec: string;
+  end;
+
 var
   FarCry2ExeName: string;
   DuniaDllName: string;
@@ -40,6 +54,7 @@ var
   DebugEnabled: Boolean;
   WaitProcess: Boolean;
   OptionItems: array of TOptionItem;
+  CommandLineOptions: TCommandLineOptions;
 
 function AlreadyRunning(): Boolean;
 
@@ -123,6 +138,24 @@ begin
   FillChar(Destination^, SizeOf(Destination^), 0);
 end;
 
+function QuoteIfSpaces(const S: string): string;
+var
+  L: Integer;
+begin
+  Result := Trim(S);
+  if Pos(' ',Result) > 0 then
+  begin
+    L := Length(Result);
+    if L > 0 then
+    begin
+      if (Result[1] = '"') and (Result[L] = '"') then
+        exit
+      else
+        Result := '"' + Result + '"';
+    end;
+  end;
+end;
+
 function CurrentFileInfo(NameApp: string): string;
 var
   dump: DWORD;
@@ -176,6 +209,8 @@ begin
       Value := OptionsINI.ReadBool(Section, Key, DefaultValue);
     varInteger, varSmallint, varByte, varWord, varLongWord:
       Value := OptionsINI.ReadInteger(Section, Key, DefaultValue);
+    varString:
+      Value := OptionsINI.ReadString(Section, Key, DefaultValue);
   end;
   if not VarIsEmpty(Value) then
     SetOptionByKey(Key, Value);
@@ -193,6 +228,8 @@ begin
         OptionsINI.WriteBool(Section, Key, Value);
       varInteger, varSmallint, varByte, varWord, varLongWord:
         OptionsINI.WriteInteger(Section, Key, Value);
+      varString:
+        OptionsINI.WriteString(Section, Key, Value);
     end;
   end;
 end;
@@ -325,21 +362,24 @@ begin
     DllLoadingState := dlsNone;
     FileName := FarCry2ExeName;
     CommandLine := FarCry2ExeName;
-    if Options.bSkipIntroMovies then
+    if CommandLineOptions.bSkipIntroMovies then
       CommandLine := CommandLine + ' -GameProfile_SkipIntroMovies 1';
-    if Options.bMaxFps then
-      CommandLine := CommandLine + ' -RenderProfile_MaxFps ' + IntToStr(Options.iMaxFps);
+    if CommandLineOptions.bMaxFps then
+      CommandLine := CommandLine + ' -RenderProfile_MaxFps ' + IntToStr(CommandLineOptions.iMaxFps);
 
-    if Options.bAllWeaponsUnlock then
+    if CommandLineOptions.bAllWeaponsUnlock then
       CommandLine := CommandLine + ' -GameProfile_AllWeaponsUnlock 1';
-    if Options.bUnlimitedReliability then
+    if CommandLineOptions.bUnlimitedReliability then
       CommandLine := CommandLine + ' -GameProfile_UnlimitedReliability 1';
-    if Options.bUnlimitedAmmo then
+    if CommandLineOptions.bUnlimitedAmmo then
       CommandLine := CommandLine + ' -GameProfile_UnlimitedAmmo 1';
-    if Options.bGodMode then
+    if CommandLineOptions.bGodMode then
       CommandLine := CommandLine + ' -GameProfile_GodMode 1';
-    if Options.bZombieAI then
+    if CommandLineOptions.bZombieAI then
       CommandLine := CommandLine + ' -zombieai';
+
+    if CommandLineOptions.bExec and (CommandLineOptions.sExec <> '') then
+      CommandLine := CommandLine + ' -exec ' + QuoteIfSpaces(CommandLineOptions.sExec);
 
     Path := ExtractFilePath(FarCry2ExeName);
     ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
@@ -486,7 +526,7 @@ begin
   Result := 0;
   Snapshot := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if Snapshot = INVALID_HANDLE_VALUE then
-    Exit;
+    exit;
   PE32.dwSize := SizeOf(TProcessEntry32);
   if (Process32First(Snapshot, PE32)) then
     repeat
@@ -575,7 +615,7 @@ var
   i: Integer;
 begin
   if Nodes.Count = 0 then
-    Exit;
+    exit;
   for i := 0 to Nodes.Count - 1 do
   begin
     N := Length(SubItems);
@@ -591,6 +631,18 @@ begin
       except
       end;
     end;
+    if Nodes[i].NodeName = 'string' then
+    begin
+      SetLength(SubItems, N + 1);
+      SubItems[N].Key := Nodes[i].Attributes['key'];
+      SubItems[N].Name := Nodes[i].Attributes['name'];
+      TVarData(SubItems[N].Value).VType := varString;
+      TVarData(SubItems[N].Default).VType := varString;
+      try
+        SubItems[N].Default := Nodes[i].Attributes['default'];
+      except
+      end;
+    end;
   end;
 end;
 
@@ -600,7 +652,7 @@ var
   i: Integer;
 begin
   if Nodes.Count = 0 then
-    Exit;
+    exit;
   for i := 0 to Nodes.Count - 1 do
   begin
     N := Length(OptionItems);
@@ -666,21 +718,25 @@ begin
   if Key = 'iFOV' then
     Result := Options.iFOV;
   if Key = 'bSkipIntroMovies' then
-    Result := Options.bSkipIntroMovies;
+    Result := CommandLineOptions.bSkipIntroMovies;
   if Key = 'bMaxFps' then
-    Result := Options.bMaxFps;
+    Result := CommandLineOptions.bMaxFps;
   if Key = 'iMaxFps' then
-    Result := Options.iMaxFps;
+    Result := CommandLineOptions.iMaxFps;
   if Key = 'bAllWeaponsUnlock' then
-    Result := Options.bAllWeaponsUnlock;
+    Result := CommandLineOptions.bAllWeaponsUnlock;
   if Key = 'bUnlimitedReliability' then
-    Result := Options.bUnlimitedReliability;
+    Result := CommandLineOptions.bUnlimitedReliability;
   if Key = 'bUnlimitedAmmo' then
-    Result := Options.bUnlimitedAmmo;
+    Result := CommandLineOptions.bUnlimitedAmmo;
   if Key = 'bGodMode' then
-    Result := Options.bGodMode;
+    Result := CommandLineOptions.bGodMode;
   if Key = 'bZombieAI' then
-    Result := Options.bZombieAI;
+    Result := CommandLineOptions.bZombieAI;
+  if Key = 'bExec' then
+    Result := CommandLineOptions.bExec;
+  if Key = 'sExec' then
+    Result := CommandLineOptions.sExec;
 end;
 
 procedure SetOptionByKey(Key: string; Value: Variant);
@@ -698,21 +754,25 @@ begin
   if Key = 'iFOV' then
     Options.iFOV := Value;
   if Key = 'bSkipIntroMovies' then
-    Options.bSkipIntroMovies := Value;
+    CommandLineOptions.bSkipIntroMovies := Value;
   if Key = 'bMaxFps' then
-    Options.bMaxFps := Value;
+    CommandLineOptions.bMaxFps := Value;
   if Key = 'iMaxFps' then
-    Options.iMaxFps := Value;
+    CommandLineOptions.iMaxFps := Value;
   if Key = 'bAllWeaponsUnlock' then
-    Options.bAllWeaponsUnlock := Value;
+    CommandLineOptions.bAllWeaponsUnlock := Value;
   if Key = 'bUnlimitedReliability' then
-    Options.bUnlimitedReliability := Value;
+    CommandLineOptions.bUnlimitedReliability := Value;
   if Key = 'bUnlimitedAmmo' then
-    Options.bUnlimitedAmmo := Value;
+    CommandLineOptions.bUnlimitedAmmo := Value;
   if Key = 'bGodMode' then
-    Options.bGodMode := Value;
+    CommandLineOptions.bGodMode := Value;
   if Key = 'bZombieAI' then
-    Options.bZombieAI := Value;
+    CommandLineOptions.bZombieAI := Value;
+  if Key = 'bExec' then
+    CommandLineOptions.bExec := Value;
+  if Key = 'sExec' then
+    CommandLineOptions.sExec := Value;
 end;
 
 end.

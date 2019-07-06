@@ -96,7 +96,12 @@ begin
       Edits[i].Left := Memo1.Left;
       Edits[i].Top := EditsTop + i * 27;
       Edits[i].Height := 21;
-      Edits[i].Width := 85;
+      case VarType(OptionItems[N].OptionSubItems[i].Value) of
+        varInteger, varSmallint, varByte, varWord, varLongWord:
+          Edits[i].Width := 85;
+        varString:
+          Edits[i].Width := 185;
+      end;
       Edits[i].Text := OptionItems[N].OptionSubItems[i].Value;
       if OptionItems[N].ParentIndex <> -1 then
         Edits[i].Enabled := OptionItems[OptionItems[N].ParentIndex].Checked;
