@@ -42,6 +42,7 @@ type
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     MessagesCounter: Integer;
+    StringMessage: string;
     DebugLayout: Boolean;
     procedure OnMessage(var MSG: TMessage); message WM_APP + 1;
     procedure AdjustFormToDebug();
@@ -80,6 +81,21 @@ end;
 procedure TForm1.OnMessage(var MSG: TMessage);
 begin
   Inc(MessagesCounter);
+
+  if (MSG.WParam = 1) then
+  begin
+    if (MSG.LParam = 0) then
+    begin
+      Log(IntToStr(MessagesCounter) + '. Recieved string message: ' + StringMessage);
+      StringMessage := '';
+    end
+    else
+    begin
+      StringMessage := StringMessage + Chr(MSG.LParam);
+    end;
+    Exit;
+  end;
+
   Log(IntToStr(MessagesCounter) + '. Recieved message: wParam = ' + IntToHex(MSG.WParam, 4) + ', lParam = ' + IntToHex(MSG.LParam, 4));
   if DllLoadingState = dlsLoading then
   begin
@@ -244,3 +260,4 @@ begin
 end;
 
 end.
+

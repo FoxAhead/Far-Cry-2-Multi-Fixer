@@ -27,6 +27,8 @@ var
   GfFOV: Single;
   GfFOVVehicle: Single;
   GfFOVRet: Integer;
+  GfFOVVehicleCall: Integer;
+  GConsoleCommandCall1: Integer;
 
 procedure SendMessageToLoader(WParam: Integer; LParam: Integer); stdcall;
 var
@@ -62,7 +64,7 @@ asm
     push  [edx]
     push  eax
     push  edx
-    mov   eax, $10234320
+    mov   eax, GfFOVVehicleCall
     call  eax
     pop   ecx
     test  eax, eax
@@ -83,6 +85,64 @@ asm
 @@loc_10234A53:
     XOR   al, al
     ret   8
+end;
+
+function PatchAddDevModeConsoleCommand(a: Integer): Integer; stdcall; // __thiscall
+var
+  This: Integer;
+  s: PChar;
+begin
+  asm
+    mov   This, ecx
+  end;
+  if (PInteger(a + $18)^ < $10) then
+  begin
+    s := PChar(a + 4);
+  end
+  else
+  begin
+    s := PChar(PInteger(a + 4)^);
+  end;
+  if (StrIComp(s, 'devmodeon') = 0) then
+  begin
+    PByte(This + $68)^ := $01;
+  end;
+  if (StrIComp(s, 'devmodeoff') = 0) then
+  begin
+    PByte(This + $68)^ := $00;
+  end;
+  asm
+    mov   ecx, This
+    push  a
+    mov   eax, GConsoleCommandCall1
+    call  eax
+    mov   Result, eax
+  end;
+end;
+
+procedure PatchTest1Ex(a: Integer); stdcall;
+var
+  b: Integer;
+  c: Integer;
+begin
+  b := a;
+  repeat
+    c := PByte(b)^;
+    SendMessageToLoader(1, c);
+    b := b + 1;
+  until c = 0;
+end;
+
+procedure PatchTest1; register;
+asm
+    mov   eax, [esp + $04]
+    push  ecx
+    push  eax
+    call  PatchTest1Ex
+    pop   ecx
+    sub   esp, $84
+    push  $105FD7A6
+    ret
 end;
 
 {$O+}
@@ -124,8 +184,14 @@ begin
     GfFOVVehicle := FC2MFOptions.iFOV + 15;
     GfFOVRet := GAddr[GVer, 6];
 
-    WriteMemory(HProcess, $10234A30, [OP_JMP], @PatchLoadVehicleFovAngle);
+    WriteMemory(HProcess, GAddr[GVer, 7], [OP_JMP], @PatchLoadVehicleFovAngle);
+    GfFOVVehicleCall := GAddr[GVer, 8];
   end;
+
+  // ConsoleCommand
+  WriteMemory(HProcess, GAddr[GVer, 9], [OP_CALL], @PatchAddDevModeConsoleCommand);
+  GConsoleCommandCall1 := GAddr[GVer, 10];
+
   {if FC2MFOptions.bTest1 then
   begin
     WriteMemory(HProcess, $10F007F0, [$00, $00, $00, $00, $00, $00, $00, $00]);
@@ -134,6 +200,13 @@ begin
   begin
     WriteMemory(HProcess, $10ED8EDC, [$20, $41]);
   end;}
+
+  // RegisterConsoleCommand
+  //WriteMemory(HProcess, $105FD7A0, [OP_JMP], @PatchTest1);
+
+  // IsScriptAutorunEnabled
+  //WriteMemory(HProcess, $105C1F80, [$B0, $00, OP_NOP, OP_NOP, OP_NOP, OP_NOP]);
+
 end;
 
 procedure DllMain(Reason: Integer);
@@ -167,4 +240,3 @@ begin
   DllProc := @DllMain;
   DllProc(DLL_PROCESS_ATTACH);
 end.
-
