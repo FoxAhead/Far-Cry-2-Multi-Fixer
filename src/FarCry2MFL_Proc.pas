@@ -45,6 +45,10 @@ type
     sExec: string;
   end;
 
+const
+  FAR_CRY_2_EXE_SIZE = 28296;
+  FAR_CRY_2_EXE_CRC32 = $5F78917A;
+
 var
   FarCry2ExeName: string;
   DuniaDllName: string;
@@ -92,6 +96,10 @@ procedure ShowProgressDialog(TimeOut: Integer);
 
 procedure SetDuniaDllName();
 
+procedure TrySetFarCry2ExeName(Path: string);
+
+function CalcFileCRC32(FileName: string): Cardinal;
+
 function GetGameVersion(): Integer;
 
 //--------------------------------------------------------------------------------------------------
@@ -112,6 +120,8 @@ uses
   ShlObj,
   SysUtils,
   TlHelp32,
+  Types,
+  UnitCRC32,
   XMLDoc,
   XMLIntf,
   Windows,
@@ -143,13 +153,13 @@ var
   L: Integer;
 begin
   Result := Trim(S);
-  if Pos(' ',Result) > 0 then
+  if Pos(' ', Result) > 0 then
   begin
     L := Length(Result);
     if L > 0 then
     begin
       if (Result[1] = '"') and (Result[L] = '"') then
-        exit
+        Exit
       else
         Result := '"' + Result + '"';
     end;
@@ -297,7 +307,7 @@ var
 begin
   CoInitialize(nil);
   MyPath := ExtractFilePath(Application.ExeName);
-  SetFileNameIfExist(FarCry2ExeName, MyPath + 'FarCry2.exe');
+  TrySetFarCry2ExeName(MyPath);
   SetFileNameIfExist(DllName, MyPath + 'FarCry2MF.dll');
   for i := 1 to ParamCount do
   begin
@@ -306,10 +316,7 @@ begin
     if ParamStr(i) = '-dll' then
       SetFileNameIfExist(DllName, ParamStr(i + 1));
   end;
-  if FarCry2ExeName = '' then
-  begin
-    SetFileNameIfExist(FarCry2ExeName, GetInstallLocation() + '\FarCry2.exe');
-  end;
+  TrySetFarCry2ExeName(GetInstallLocation() + '\');
 
   SetDuniaDllName();
 
@@ -405,7 +412,7 @@ begin
     if not WriteProcessMemory(ProcessInformation.hProcess, Pointer(EntryPointAddress), @Inject, SizeOf(Inject), BytesWritten) then
       raise Exception.Create('WriteProcessMemory1: ' + IntToStr(GetLastError()));
     Log('BytesWritten ' + IntToStr(BytesWritten));
-    if not WriteProcessMemory(ProcessInformation.hProcess, FC2MFOPtions, @Options, SizeOf(Options), BytesWritten) then
+    if not WriteProcessMemory(ProcessInformation.hProcess, FC2MFOptions, @Options, SizeOf(Options), BytesWritten) then
       raise Exception.Create('WriteProcessMemory2: ' + IntToStr(GetLastError()));
     Log('BytesWritten ' + IntToStr(BytesWritten));
 
@@ -526,7 +533,7 @@ begin
   Result := 0;
   Snapshot := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if Snapshot = INVALID_HANDLE_VALUE then
-    exit;
+    Exit;
   PE32.dwSize := SizeOf(TProcessEntry32);
   if (Process32First(Snapshot, PE32)) then
     repeat
@@ -572,6 +579,50 @@ begin
   end;
 end;
 
+procedure TrySetFarCry2ExeName(Path: string);
+var
+  SearchRec: TSearchRec;
+  SearchMask: string;
+  FileName: string;
+begin
+  if FarCry2ExeName = '' then
+  begin
+    if DirectoryExists(Path) then
+    begin
+      SearchMask := Path + '*.exe';
+      if SysUtils.FindFirst(SearchMask, faAnyFile, SearchRec) = 0 then
+      begin
+        repeat
+          if SearchRec.Size = FAR_CRY_2_EXE_SIZE then
+          begin 
+            FileName := Path + SearchRec.Name;
+            if CalcFileCRC32(FileName) = FAR_CRY_2_EXE_CRC32 then
+            begin
+              FarCry2ExeName := FileName;
+              if SameText(SearchRec.Name, 'FarCry2.exe') then
+                Break;
+            end;
+          end;
+        until SysUtils.FindNext(SearchRec) <> 0;
+        SysUtils.FindClose(SearchRec);
+      end;
+    end;
+  end;
+end;
+
+function CalcFileCRC32(FileName: string): Cardinal;
+var
+  FileStream: TFileStream;
+  FileBuffer: TByteDynArray;
+begin
+  FileStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyNone);
+  FileBuffer := nil;
+  SetLength(FileBuffer, FileStream.Size);
+  FileStream.Read(Pointer(FileBuffer)^, FileStream.Size);
+  FileStream.Free;
+  Result := TCRC32.Calc(FileBuffer, Length(FileBuffer));
+end;
+
 function GetGameVersion(): Integer;
 var
   FarCry2ExeSize: Integer;
@@ -584,7 +635,7 @@ begin
   Result := 0;
   FarCry2ExeSize := GetFileSize(FarCry2ExeName);
   DuniaDllSize := GetFileSize(DuniaDllName);
-  if FarCry2ExeSize <> 28296 then
+  if FarCry2ExeSize <> FAR_CRY_2_EXE_SIZE then
     raise Exception.Create(Format('Wrong size of FarCry2.exe file (%d). Game version v1.03 supported only.', [FarCry2ExeSize]));
   case DuniaDllSize of
     20183176, 20184168:
@@ -615,7 +666,7 @@ var
   i: Integer;
 begin
   if Nodes.Count = 0 then
-    exit;
+    Exit;
   for i := 0 to Nodes.Count - 1 do
   begin
     N := Length(SubItems);
@@ -652,7 +703,7 @@ var
   i: Integer;
 begin
   if Nodes.Count = 0 then
-    exit;
+    Exit;
   for i := 0 to Nodes.Count - 1 do
   begin
     N := Length(OptionItems);
