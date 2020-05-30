@@ -12,7 +12,7 @@ Homemade Machete — As the name suggests, it is home-made. Its blade is mangled
 https://farcry.fandom.com/wiki/Machete" default="1"/>
 	</section>
 	<section name="Gameplay Change" description="Gameplay Change">
-		<boolean key="bNoBlinkingItems" name="No Blinking Items" description="All interactable items like guns, beds, boxes and other no longer blink bringing more realism." default="0"/>
+		<boolean key="bNoBlinkingItems" name="No Blinking Items" description="All interactable items like guns, beds, boxes and map icons and other no longer blink bringing more realism." default="0"/>
 		<boolean key="bFOV" name="FOV" description="Set desired first person Field of View other than default 75. That does not affect aiming (Iron Sights) FOV." default="0">
 			<integer key="iFOV" name="FOV" default="90"/>
 		</boolean>

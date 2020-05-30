@@ -176,6 +176,8 @@ begin
   if FC2MFOptions.bNoBlinkingItems then
   begin
     WriteMemory(HProcess, GAddr[GVer, 4], [$2E]);
+    WriteMemory(HProcess, GAddr[GVer, 11], [$2E]);
+    WriteMemory(HProcess, GAddr[GVer, 12], [$2E]);
   end;
   if FC2MFOptions.bFOV then
   begin
