@@ -47,7 +47,8 @@ type
 
 const
   FAR_CRY_2_EXE_SIZE = 28296;
-  FAR_CRY_2_EXE_CRC32 = $5F78917A;
+  FAR_CRY_2_EXE_CRC32_STEAM = $5F78917A;
+  FAR_CRY_2_EXE_CRC32_RETAIL = $0FC58B66;
 
 var
   FarCry2ExeName: string;
@@ -584,6 +585,7 @@ var
   SearchRec: TSearchRec;
   SearchMask: string;
   FileName: string;
+  FileCRC32: Cardinal;
 begin
   if FarCry2ExeName = '' then
   begin
@@ -594,9 +596,10 @@ begin
       begin
         repeat
           if SearchRec.Size = FAR_CRY_2_EXE_SIZE then
-          begin 
+          begin
             FileName := Path + SearchRec.Name;
-            if CalcFileCRC32(FileName) = FAR_CRY_2_EXE_CRC32 then
+            FileCRC32 := CalcFileCRC32(FileName);
+            if (FileCRC32 = FAR_CRY_2_EXE_CRC32_STEAM) or (FileCRC32 = FAR_CRY_2_EXE_CRC32_RETAIL) then
             begin
               FarCry2ExeName := FileName;
               if SameText(SearchRec.Name, 'FarCry2.exe') then
