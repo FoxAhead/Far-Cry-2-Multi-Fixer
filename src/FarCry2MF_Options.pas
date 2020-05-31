@@ -18,6 +18,7 @@ type
 const
   GAME_VERSION_STEAM = 1;
   GAME_VERSION_RETAIL = 2;
+  GAME_VERSION_UPLAY = 3;
 
 var
   Options: TFC2MFOptions;

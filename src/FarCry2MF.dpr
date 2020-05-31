@@ -155,7 +155,12 @@ end;
 
 procedure Attach(HProcess: Cardinal);
 begin
-  GVer := FC2MFOptions.Version;
+  case FC2MFOptions.Version of
+    GAME_VERSION_STEAM, GAME_VERSION_UPLAY:
+      GVer := 1;
+    GAME_VERSION_RETAIL:
+      GVer := 2;
+  end;
   if FC2MFOptions.bJackalTapesFix then
   begin
     WriteMemory(HProcess, GAddr[GVer, 1], [$14]);
@@ -242,3 +247,4 @@ begin
   DllProc := @DllMain;
   DllProc(DLL_PROCESS_ATTACH);
 end.
+

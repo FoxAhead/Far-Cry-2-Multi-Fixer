@@ -45,10 +45,33 @@ type
     sExec: string;
   end;
 
+  TGameFilesInfo = record
+    FarCry2ExeSize: Integer;
+    FarCry2ExeCRC32: Cardinal;
+    DuniaDllSize: Integer;
+    VersionStringOffset: Integer;
+  end;
+
 const
-  FAR_CRY_2_EXE_SIZE = 28296;
-  FAR_CRY_2_EXE_CRC32_STEAM = $5F78917A;
-  FAR_CRY_2_EXE_CRC32_RETAIL = $0FC58B66;
+  GameFilesInfo: array[1..3] of TGameFilesInfo =((
+    // Steam
+    FarCry2ExeSize: 28296;
+    FarCry2ExeCRC32: $5F78917A;
+    DuniaDllSize: 20183176;
+    VersionStringOffset: $00E37F54
+  ),(
+    // Retail
+    FarCry2ExeSize: 28296;
+    FarCry2ExeCRC32: $0FC58B66;
+    DuniaDllSize: 19412104;
+    VersionStringOffset: $00DB1FC4
+  ), (
+    // Uplay
+    FarCry2ExeSize: 29864;
+    FarCry2ExeCRC32: $8CF778F0;
+    DuniaDllSize: 20184168;
+    VersionStringOffset: $00E37F54
+  ));
 
 var
   FarCry2ExeName: string;
@@ -100,6 +123,8 @@ procedure SetDuniaDllName();
 procedure TrySetFarCry2ExeName(Path: string);
 
 function CalcFileCRC32(FileName: string): Cardinal;
+
+function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal; DuniaDllSize: Integer): Integer;
 
 function GetGameVersion(): Integer;
 
@@ -169,20 +194,20 @@ end;
 
 function CurrentFileInfo(NameApp: string): string;
 var
-  dump: DWORD;
-  size: Integer;
-  buffer: PChar;
+  Dump: DWORD;
+  Size: Integer;
+  Buffer: PChar;
   VersionPointer, TransBuffer: PChar;
   Temp: Integer;
   CalcLangCharSet: string;
 begin
-  size := GetFileVersionInfoSize(PChar(NameApp), dump);
-  buffer := StrAlloc(size + 1);
+  Size := GetFileVersionInfoSize(PChar(NameApp), Dump);
+  Buffer := StrAlloc(Size + 1);
   try
-    GetFileVersionInfo(PChar(NameApp), 0, size, buffer);
+    GetFileVersionInfo(PChar(NameApp), 0, Size, Buffer);
 
-    VerQueryValue(buffer, '\VarFileInfo\Translation', Pointer(TransBuffer), dump);
-    if dump >= 4 then
+    VerQueryValue(Buffer, '\VarFileInfo\Translation', Pointer(TransBuffer), Dump);
+    if Dump >= 4 then
     begin
       Temp := 0;
       StrLCopy(@Temp, TransBuffer, 2);
@@ -191,16 +216,16 @@ begin
       CalcLangCharSet := CalcLangCharSet + IntToHex(Temp, 4);
     end;
 
-    VerQueryValue(buffer, PChar('\StringFileInfo\' + CalcLangCharSet + '\' + 'FileVersion'), Pointer(VersionPointer), dump);
-    if (dump > 1) then
+    VerQueryValue(Buffer, PChar('\StringFileInfo\' + CalcLangCharSet + '\' + 'FileVersion'), Pointer(VersionPointer), Dump);
+    if (Dump > 1) then
     begin
-      SetLength(Result, dump);
-      StrLCopy(PChar(Result), VersionPointer, dump);
+      SetLength(Result, Dump);
+      StrLCopy(PChar(Result), VersionPointer, Dump);
     end
     else
       Result := '0.0.0.0';
   finally
-    StrDispose(buffer);
+    StrDispose(Buffer);
   end;
 end;
 
@@ -521,7 +546,7 @@ begin
   Result := 0;
   if SysUtils.FindFirst(FileName, faAnyFile, sr) = 0 then
   begin
-    Result := sr.size;
+    Result := sr.Size;
     SysUtils.FindClose(sr);
   end;
 end;
@@ -585,7 +610,8 @@ var
   SearchRec: TSearchRec;
   SearchMask: string;
   FileName: string;
-  FileCRC32: Cardinal;
+  BestMatch: Integer;
+  CurrentMatch: Integer;
 begin
   if FarCry2ExeName = '' then
   begin
@@ -594,17 +620,20 @@ begin
       SearchMask := Path + '*.exe';
       if SysUtils.FindFirst(SearchMask, faAnyFile, SearchRec) = 0 then
       begin
+        BestMatch := 0;
         repeat
-          if SearchRec.Size = FAR_CRY_2_EXE_SIZE then
+          CurrentMatch := 0;
+          FileName := Path + SearchRec.Name;
+          if SameText(SearchRec.Name, 'FarCry2.exe') then
+            CurrentMatch := CurrentMatch + 1;
+          if IndexByGameFilesInfo(SearchRec.Size, 0, 0) > 0 then
+            CurrentMatch := CurrentMatch + 2;
+          if IndexByGameFilesInfo(0, CalcFileCRC32(FileName), 0) > 0 then
+            CurrentMatch := CurrentMatch + 4;
+          if CurrentMatch > BestMatch then
           begin
-            FileName := Path + SearchRec.Name;
-            FileCRC32 := CalcFileCRC32(FileName);
-            if (FileCRC32 = FAR_CRY_2_EXE_CRC32_STEAM) or (FileCRC32 = FAR_CRY_2_EXE_CRC32_RETAIL) then
-            begin
-              FarCry2ExeName := FileName;
-              if SameText(SearchRec.Name, 'FarCry2.exe') then
-                Break;
-            end;
+            BestMatch := CurrentMatch;
+            FarCry2ExeName := FileName;
           end;
         until SysUtils.FindNext(SearchRec) <> 0;
         SysUtils.FindClose(SearchRec);
@@ -626,41 +655,47 @@ begin
   Result := TCRC32.Calc(FileBuffer, Length(FileBuffer));
 end;
 
-function GetGameVersion(): Integer;
+function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal; DuniaDllSize: Integer): Integer;
 var
-  FarCry2ExeSize: Integer;
-  DuniaDllSize: Integer;
-  FileStream: TFileStream;
-  UpdateVersionPosition: Integer;
-  UpdateVersion: array[0..3] of Char;
-  GameVersion: Integer;
+  i: Integer;
 begin
   Result := 0;
-  FarCry2ExeSize := GetFileSize(FarCry2ExeName);
+  for i := Low(GameFilesInfo) to High(GameFilesInfo) do
+  begin
+{(*}
+    if (FarCry2ExeSize  <> 0) and (GameFilesInfo[i].FarCry2ExeSize  = FarCry2ExeSize)  or
+       (FarCry2ExeCRC32 <> 0) and (GameFilesInfo[i].FarCry2ExeCRC32 = FarCry2ExeCRC32) or
+       (DuniaDllSize    <> 0) and (GameFilesInfo[i].DuniaDllSize    = DuniaDllSize) then
+{*)}
+    begin
+      Result := i;
+      Break;
+    end;
+  end;
+end;
+
+function GetGameVersion(): Integer;
+var
+  DuniaDllSize: Integer;
+  IndexByDuniaDll: Integer;
+  FileStream: TFileStream;
+  VersionStringOffset: Integer;
+  UpdateVersion: array[0..3] of Char;
+begin
+  Result := 0;
   DuniaDllSize := GetFileSize(DuniaDllName);
-  if FarCry2ExeSize <> FAR_CRY_2_EXE_SIZE then
-    raise Exception.Create(Format('Wrong size of FarCry2.exe file (%d). Game version v1.03 supported only.', [FarCry2ExeSize]));
-  case DuniaDllSize of
-    20183176, 20184168:
-      begin
-        GameVersion := GAME_VERSION_STEAM;
-        UpdateVersionPosition := $00E37F54;
-      end;
-    19412104:
-      begin
-        GameVersion := GAME_VERSION_RETAIL;
-        UpdateVersionPosition := $00DB1FC4;
-      end;
+  IndexByDuniaDll := IndexByGameFilesInfo(0, 0, DuniaDllSize);
+  if (IndexByDuniaDll >= Low(GameFilesInfo)) and (IndexByDuniaDll <= High(GameFilesInfo)) then
+    VersionStringOffset := GameFilesInfo[IndexByDuniaDll].VersionStringOffset
   else
     raise Exception.Create(Format('Wrong size of Dunia.dll file (%d). Game version v1.03 supported only.', [DuniaDllSize]));
-  end;
   FileStream := TFileStream.Create(DuniaDllName, fmOpenRead or fmShareDenyNone);
-  FileStream.Seek(UpdateVersionPosition, soFromBeginning);
+  FileStream.Seek(VersionStringOffset, soFromBeginning);
   FileStream.ReadBuffer(UpdateVersion, 4);
   FileStream.Free;
   if UpdateVersion <> '1.03' then
     raise Exception.Create('Wrong version of Dunia.dll file. Game version v1.03 supported only.');
-  Result := GameVersion;
+  Result := IndexByDuniaDll;
 end;
 
 procedure FormOptionsAddSubItems(Nodes: IXMLNodeList; var SubItems: TOptionSubItems);
@@ -830,3 +865,4 @@ begin
 end;
 
 end.
+
