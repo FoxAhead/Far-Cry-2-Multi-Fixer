@@ -52,8 +52,10 @@ type
     VersionStringOffset: Integer;
   end;
 
+  TGameFilesInfos = array[1..3] of TGameFilesInfo;
+
 const
-  GameFilesInfo: array[1..3] of TGameFilesInfo =((
+  GameFilesInfo: TGameFilesInfos =((
     // Steam
     FarCry2ExeSize: 28296;
     FarCry2ExeCRC32: $5F78917A;
@@ -65,7 +67,7 @@ const
     FarCry2ExeCRC32: $0FC58B66;
     DuniaDllSize: 19412104;
     VersionStringOffset: $00DB1FC4
-  ), (
+  ),(
     // Uplay
     FarCry2ExeSize: 29864;
     FarCry2ExeCRC32: $8CF778F0;
@@ -390,6 +392,8 @@ var
   BytesRead: Cardinal;
   BytesWritten: Cardinal;
   i: Integer;
+  UplayPatchAddress: Pointer;
+  UplayPatch: array[0..4] of Cardinal;
 begin
   try
     DllLoadingState := dlsNone;
@@ -441,6 +445,14 @@ begin
     if not WriteProcessMemory(ProcessInformation.hProcess, FC2MFOptions, @Options, SizeOf(Options), BytesWritten) then
       raise Exception.Create('WriteProcessMemory2: ' + IntToStr(GetLastError()));
     Log('BytesWritten ' + IntToStr(BytesWritten));
+    if CalcFileCRC32(FarCry2ExeName) = GameFilesInfo[GAME_VERSION_UPLAY].FarCry2ExeCRC32 then
+    begin
+      UplayPatchAddress := Pointer($0040903C); //IMAGE_IMPORT_DESCRIPTOR[3]
+      ZeroMemory(@UplayPatch, SizeOf(UplayPatch));
+      if not WriteProcessMemory(ProcessInformation.hProcess, UplayPatchAddress, @UplayPatch, SizeOf(UplayPatch), BytesWritten) then
+        raise Exception.Create('WriteProcessMemory3: ' + IntToStr(GetLastError()));
+      Log('BytesWritten ' + IntToStr(BytesWritten));
+    end;
 
     DllLoadingState := dlsLoading;
 

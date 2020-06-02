@@ -9,54 +9,57 @@ type
     Path: string;
   end;
 
-  TInstallSearchs = array[0..5] of TInstallSearch;
+  TInstallSearchs = array[0..4] of TInstallSearch;
 
 const
   InstallSearchs: TInstallSearchs = ((
-    RKey: '\SOFTWARE\Ubisoft\Far Cry 2';
+    RKey: '\Ubisoft\Far Cry 2';
     RValue: 'InstallDir';
     Path: 'bin';
-    ), (
-    RKey: '\SOFTWARE\Wow6432Node\Ubisoft\Far Cry 2';
-    RValue: 'InstallDir';
-    Path: 'bin';
-    ), (
-    RKey: '\SOFTWARE\Valve\Steam';
+  ), (
+    RKey: '\Valve\Steam';
     RValue: 'InstallPath';
     Path: 'steamapps\common\far cry 2\bin';
-    ), (
-    RKey: '\SOFTWARE\Wow6432Node\Valve\Steam';
-    RValue: 'InstallPath';
-    Path: 'steamapps\common\far cry 2\bin';
-    ), (
-    RKey: '\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 19900';
+  ), (
+    RKey: '\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 19900';
+    RValue: 'InstallLocation';
+    Path: 'bin';
+  ), (
+    RKey: '\Ubisoft\Launcher\Installs\85';
     RValue: 'InstallDir';
     Path: 'bin';
-    ), (
-    RKey: '\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 19900';
-    RValue: 'InstallDir';
+  ), (
+    RKey: '\Microsoft\Windows\CurrentVersion\Uninstall\Uplay Install 85';
+    RValue: 'InstallLocation';
     Path: 'bin';
-    ));
-
-function TryGetOneInstallLocation(InstallSearch: TInstallSearch): string;
+  ));
 
 function GetInstallLocation(): string;
+
+function TryGetOneInstallLocation(Prefix: string; InstallSearch: TInstallSearch): string;
+
+function TranslateChar(const Str: string; FromChar, ToChar: Char): string;
+
+function UnixPathToDosPath(const Path: string): string;
 
 implementation
 
 uses
   Registry,
-  Windows,
-  SysUtils;
+  SysUtils,
+  Windows;
 
 function GetInstallLocation(): string;
 var
   i: Integer;
   Path: string;
 begin
+  Result := '';
   for i := Low(InstallSearchs) to High(InstallSearchs) do
   begin
-    Path := TryGetOneInstallLocation(InstallSearchs[i]);
+    Path := TryGetOneInstallLocation('\SOFTWARE', InstallSearchs[i]);
+    if Path = '' then
+      Path := TryGetOneInstallLocation('\SOFTWARE\Wow6432Node', InstallSearchs[i]);
     if Path <> '' then
     begin
       Result := Path;
@@ -65,7 +68,7 @@ begin
   end;
 end;
 
-function TryGetOneInstallLocation(InstallSearch: TInstallSearch): string;
+function TryGetOneInstallLocation(Prefix: string; InstallSearch: TInstallSearch): string;
 var
   Registry: TRegistry;
   Path: string;
@@ -74,12 +77,12 @@ begin
   Registry := TRegistry.Create(KEY_READ);
   Registry.RootKey := HKEY_LOCAL_MACHINE;
   try
-    if Registry.OpenKey(InstallSearch.RKey, False) then
+    if Registry.OpenKey(Prefix + InstallSearch.RKey, False) then
     begin
       Path := Registry.ReadString(InstallSearch.RValue);
       if Path <> '' then
       begin
-        Path := Path + '\' + InstallSearch.Path;
+        Path := ExcludeTrailingPathDelimiter(UnixPathToDosPath(Path)) + '\' + InstallSearch.Path;
         if DirectoryExists(Path) then
         begin
           Result := Path;
@@ -91,4 +94,20 @@ begin
   end;
 end;
 
-end. 
+function TranslateChar(const Str: string; FromChar, ToChar: Char): string;
+var
+  I: Integer;
+begin
+  Result := Str;
+  for I := 1 to Length(Result) do
+    if Result[I] = FromChar then
+      Result[I] := ToChar;
+end;
+
+function UnixPathToDosPath(const Path: string): string;
+begin
+  Result := TranslateChar(Path, '/', '\');
+end;
+
+end.
+ 
