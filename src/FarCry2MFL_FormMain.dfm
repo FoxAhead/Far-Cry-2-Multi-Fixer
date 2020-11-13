@@ -16,7 +16,7 @@ object Form1: TForm1
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
-  Position = poDesktopCenter
+  Position = poScreenCenter
   ShowHint = True
   OnClose = FormClose
   OnCreate = FormCreate
