@@ -17,6 +17,11 @@ https://farcry.fandom.com/wiki/Machete" default="1"/>
 			<integer key="iFOV" name="FOV" default="90"/>
 		</boolean>
 	</section>
+  <section name="Modders support" description="Modding">
+		<boolean key="bPatchDir" name="Patch Dir" description="" default="0">
+			<string key="sPatchDir" name="Patch Directory" default=""/>
+		</boolean>
+	</section>
 	<section name="Launch Options" description="Launch options added to the command line">
 		<boolean key="bSkipIntroMovies" name="Skip Intro Movies" description="-GameProfile_SkipIntroMovies 1
 Skip Intro Movies for faster game starting." default="1"/>

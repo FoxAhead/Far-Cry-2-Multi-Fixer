@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 376
-  Top = 442
+  Left = 598
+  Top = 288
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'Far Cry 2 Multi Fixer Launcher'
@@ -50,7 +50,7 @@ object Form1: TForm1
     Width = 75
     Height = 13
     Anchors = [akLeft, akBottom]
-    Caption = '2019 FoxAhead'
+    Caption = '2020 FoxAhead'
     Enabled = False
   end
   object LabelGitHub: TLabel
@@ -127,7 +127,7 @@ object Form1: TForm1
     Width = 65
     Height = 25
     Caption = 'Browse...'
-    TabOrder = 2
+    TabOrder = 5
     OnClick = ButtonBrowseExeClick
   end
   object EditExe: TEdit
@@ -146,10 +146,10 @@ object Form1: TForm1
     Font.Style = []
     ParentFont = False
     ReadOnly = True
-    TabOrder = 5
+    TabOrder = 6
   end
   object ButtonStart: TButton
-    Left = 300
+    Left = 88
     Top = 268
     Width = 101
     Height = 25
@@ -167,9 +167,9 @@ object Form1: TForm1
     OnClick = ButtonStartClick
   end
   object ButtonShortcut: TButton
-    Left = 192
+    Left = 304
     Top = 268
-    Width = 101
+    Width = 93
     Height = 25
     Anchors = [akBottom]
     Caption = 'Create shortcut...'
@@ -177,14 +177,24 @@ object Form1: TForm1
     OnClick = ButtonShortcutClick
   end
   object ButtonOptions: TButton
-    Left = 120
+    Left = 244
     Top = 268
-    Width = 65
+    Width = 57
     Height = 25
     Anchors = [akBottom]
     Caption = 'Options...'
     TabOrder = 3
     OnClick = ButtonOptionsClick
+  end
+  object ButtonMods: TButton
+    Left = 192
+    Top = 268
+    Width = 49
+    Height = 25
+    Anchors = [akBottom]
+    Caption = 'Mods...'
+    TabOrder = 2
+    OnClick = ButtonModsClick
   end
   object OpenDialogExe: TOpenDialog
     Filter = 'FarCry2.exe|FarCry2.exe|*.exe|*.exe'

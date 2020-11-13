@@ -30,6 +30,7 @@ type
     LabelDebug: TLabel;
     Timer1: TTimer;
     ButtonOptions: TButton;
+    ButtonMods: TButton;
     procedure ButtonBrowseExeClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure ButtonStartClick(Sender: TObject);
@@ -40,11 +41,13 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ButtonOptionsClick(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure ButtonModsClick(Sender: TObject);
   private
     MessagesCounter: Integer;
     StringMessage: string;
     DebugLayout: Boolean;
-    procedure OnMessage(var MSG: TMessage); message WM_APP + 1;
+    procedure OnMessage(var Msg: TMessage); message WM_APP + 1;
+    procedure WMCopyData(var Msg: TWMCopyData); message WM_COPYDATA;
     procedure AdjustFormToDebug();
     procedure AdjustFormLayout();
   public
@@ -106,12 +109,18 @@ begin
   end;
 end;
 
+procedure TForm1.WMCopyData(var Msg: TWMCopyData);
+begin
+  Inc(MessagesCounter);
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 var
   Terminating: Boolean;
 begin
   Terminating := False;
   EditExe.Text := FarCry2ExeName;
+  OpenDialogExe.InitialDir := ExtractFilePath(FarCry2ExeName);
   LogMemo := Memo1;
 
   if IsSilentLaunch() then
@@ -246,6 +255,11 @@ end;
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   CoUninitialize();
+end;
+
+procedure TForm1.ButtonModsClick(Sender: TObject);
+begin
+  ShowModsDialog();
 end;
 
 procedure TForm1.ButtonOptionsClick(Sender: TObject);

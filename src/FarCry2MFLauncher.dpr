@@ -7,6 +7,7 @@ uses
   FarCry2MF_Options in 'FarCry2MF_Options.pas',
   FarCry2MFL_Proc in 'FarCry2MFL_Proc.pas',
   FarCry2MFL_FormMain in 'FarCry2MFL_FormMain.pas' {Form1},
+  FarCry2MFL_FormMods in 'FarCry2MFL_FormMods.pas' {FormMods},
   FarCry2MFL_FormOptions in 'FarCry2MFL_FormOptions.pas' {FormOptions},
   FarCry2MFL_FormProgress in 'FarCry2MFL_FormProgress.pas' {FormProgress},
   FarCry2MFL_InstallSearch in 'FarCry2MFL_InstallSearch.pas',

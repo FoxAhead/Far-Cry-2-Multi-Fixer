@@ -80,7 +80,7 @@ begin
   N := CheckListBox1.ItemIndex;
   if N >= 0 then
   begin
-    Memo1.Text := AdjustLineBreaks(OptionItems[N].Description);
+    Memo1.Text := OptionItems[N].Description;
     FreeEdits();
 
     M := Length(OptionItems[N].OptionSubItems);
@@ -230,3 +230,4 @@ begin
 end;
 
 end.
+

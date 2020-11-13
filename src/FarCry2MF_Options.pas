@@ -13,6 +13,8 @@ type
     bNoBlinkingItems: Boolean;
     bFOV: Boolean;
     iFOV: Integer;
+    bPatchDir: Boolean;
+    sPatchDir: array[0..$FF] of Char;
   end;
 
 const
@@ -22,7 +24,7 @@ const
 
 var
   Options: TFC2MFOptions;
-  FC2MFOptions: PFC2MFOptions = Pointer($00403200);
+  FC2MFOptions: PFC2MFOptions = Pointer($00403400);
 
 implementation
 

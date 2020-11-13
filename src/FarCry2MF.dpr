@@ -29,6 +29,7 @@ var
   GfFOVRet: Integer;
   GfFOVVehicleCall: Integer;
   GConsoleCommandCall1: Integer;
+  GPatchDir: array[0..$FF] of Char;
 
 procedure SendMessageToLoader(WParam: Integer; LParam: Integer); stdcall;
 var
@@ -145,6 +146,7 @@ asm
     ret
 end;
 
+
 {$O+}
 
 //--------------------------------------------------------------------------------------------------
@@ -199,6 +201,13 @@ begin
   WriteMemory(HProcess, GAddr[GVer, 9], [OP_CALL], @PatchAddDevModeConsoleCommand);
   GConsoleCommandCall1 := GAddr[GVer, 10];
 
+  // patch.dat
+  if FC2MFOptions.bPatchDir then
+  begin
+    StrLCopy(GPatchDir, FC2MFOptions.sPatchDir, $FF);
+    WriteMemory(HProcess, $10CEFFD1, [$68], @GPatchDir, True);
+  end;
+
   {if FC2MFOptions.bTest1 then
   begin
     WriteMemory(HProcess, $10F007F0, [$00, $00, $00, $00, $00, $00, $00, $00]);
@@ -227,6 +236,7 @@ begin
         try
           Attach(HProcess);
           SendMessageToLoader(0, 0);
+
         except
           on E: Exception do
           begin

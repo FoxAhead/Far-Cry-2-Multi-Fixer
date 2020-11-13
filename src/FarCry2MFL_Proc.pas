@@ -32,7 +32,8 @@ type
   TDllLoadingState = (dlsNone, dlsLoading, dlsOK, dlsError);
 
   // These parameters no need to pass into DLL
-  TCommandLineOptions = record
+  TLocalOptions = record
+    sPatchDir: string;
     bSkipIntroMovies: Boolean;
     bMaxFps: Boolean;
     iMaxFps: Integer;
@@ -74,6 +75,7 @@ const
     DuniaDllSize: 20184168;
     VersionStringOffset: $00E37F54
   ));
+  SAVED_BYTES_SIZE = $400;
 
 var
   FarCry2ExeName: string;
@@ -84,7 +86,7 @@ var
   DebugEnabled: Boolean;
   WaitProcess: Boolean;
   OptionItems: array of TOptionItem;
-  CommandLineOptions: TCommandLineOptions;
+  LocalOptions: TLocalOptions;
 
 function AlreadyRunning(): Boolean;
 
@@ -116,6 +118,8 @@ procedure SaveOptionsToINI();
 
 procedure SetFileNameIfExist(var Variable: string; FileName: string);
 
+procedure ShowModsDialog();
+
 procedure ShowOptionsDialog();
 
 procedure ShowProgressDialog(TimeOut: Integer);
@@ -130,6 +134,8 @@ function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal
 
 function GetGameVersion(): Integer;
 
+procedure PrepareOptionForDll();
+
 //--------------------------------------------------------------------------------------------------
 implementation
 //--------------------------------------------------------------------------------------------------
@@ -137,6 +143,7 @@ implementation
 uses
   ActiveX,
   FarCry2MF_Options,
+  FarCry2MFL_FormMods,
   FarCry2MFL_FormOptions,
   FarCry2MFL_FormProgress,
   FarCry2MFL_InstallSearch,
@@ -369,6 +376,11 @@ begin
     end;
 end;
 
+procedure PrepareOptionForDll();
+begin
+  StrPCopy(Options.sPatchDir, LocalOptions.sPatchDir);
+end;
+
 function LaunchGame(): TProcessInformation;
 var
   FileName: string;
@@ -387,7 +399,7 @@ var
     AddrLoadLibrary: Pointer;
     LibraryName: array[0..$FF] of Char;   // + 0x0D
   end;
-  SavedBytes: array[0..$1FF] of Byte;
+  SavedBytes: array[0..SAVED_BYTES_SIZE - 1] of Byte;
   EntryPointAddress: Cardinal;
   BytesRead: Cardinal;
   BytesWritten: Cardinal;
@@ -399,24 +411,24 @@ begin
     DllLoadingState := dlsNone;
     FileName := FarCry2ExeName;
     CommandLine := FarCry2ExeName;
-    if CommandLineOptions.bSkipIntroMovies then
+    if LocalOptions.bSkipIntroMovies then
       CommandLine := CommandLine + ' -GameProfile_SkipIntroMovies 1';
-    if CommandLineOptions.bMaxFps then
-      CommandLine := CommandLine + ' -RenderProfile_MaxFps ' + IntToStr(CommandLineOptions.iMaxFps);
+    if LocalOptions.bMaxFps then
+      CommandLine := CommandLine + ' -RenderProfile_MaxFps ' + IntToStr(LocalOptions.iMaxFps);
 
-    if CommandLineOptions.bAllWeaponsUnlock then
+    if LocalOptions.bAllWeaponsUnlock then
       CommandLine := CommandLine + ' -GameProfile_AllWeaponsUnlock 1';
-    if CommandLineOptions.bUnlimitedReliability then
+    if LocalOptions.bUnlimitedReliability then
       CommandLine := CommandLine + ' -GameProfile_UnlimitedReliability 1';
-    if CommandLineOptions.bUnlimitedAmmo then
+    if LocalOptions.bUnlimitedAmmo then
       CommandLine := CommandLine + ' -GameProfile_UnlimitedAmmo 1';
-    if CommandLineOptions.bGodMode then
+    if LocalOptions.bGodMode then
       CommandLine := CommandLine + ' -GameProfile_GodMode 1';
-    if CommandLineOptions.bZombieAI then
+    if LocalOptions.bZombieAI then
       CommandLine := CommandLine + ' -zombieai';
 
-    if CommandLineOptions.bExec and (CommandLineOptions.sExec <> '') then
-      CommandLine := CommandLine + ' -exec ' + QuoteIfSpaces(CommandLineOptions.sExec);
+    if LocalOptions.bExec and (LocalOptions.sExec <> '') then
+      CommandLine := CommandLine + ' -exec ' + QuoteIfSpaces(LocalOptions.sExec);
 
     Path := ExtractFilePath(FarCry2ExeName);
     ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
@@ -510,6 +522,7 @@ begin
   try
     Check();
     LoadOptionsFromINI();
+    PrepareOptionForDll();
     PI := LaunchGame();
     if not DebugEnabled then
     begin
@@ -579,6 +592,21 @@ begin
         Result := PE32.th32ProcessID;
     until not Process32Next(Snapshot, PE32);
   CloseHandle(Snapshot);
+end;
+
+procedure ShowModsDialog();
+var
+  FormMods: TFormMods;
+begin
+  FormMods := TFormMods.Create(Application);
+  if FormMods.ShowModal() = mrOk then
+  begin
+    try
+      //SaveOptionsToINI();
+    except
+    end;
+  end;
+  FormMods.Free;
 end;
 
 procedure ShowOptionsDialog();
@@ -761,7 +789,7 @@ begin
     begin
       SetLength(OptionItems, N + 1);
       OptionItems[N].Name := Nodes[i].Attributes['name'];
-      OptionItems[N].Description := Nodes[i].Attributes['description'];
+      OptionItems[N].Description := AdjustLineBreaks(Nodes[i].Attributes['description']);
       OptionItems[N].ParentIndex := ParentIndex;
       if Nodes[i].HasChildNodes then
         FormOptionsAddItems(Nodes[i].ChildNodes);
@@ -780,7 +808,7 @@ begin
       begin
         OptionItems[N].Name := '-' + StringOfChar(' ', 3) + OptionItems[N].Name;
       end;
-      OptionItems[N].Description := Nodes[i].Attributes['description'];
+      OptionItems[N].Description := AdjustLineBreaks(Nodes[i].Attributes['description']);
       if Nodes[i].HasChildNodes then
         FormOptionsAddSubItems(Nodes[i].ChildNodes, OptionItems[N].OptionSubItems);
       if Nodes[i].HasChildNodes then
@@ -818,29 +846,35 @@ begin
     Result := Options.bFOV;
   if Key = 'iFOV' then
     Result := Options.iFOV;
+  if Key = 'bPatchDir' then
+    Result := Options.bPatchDir;
+  if Key = 'sPatchDir' then
+    Result := LocalOptions.sPatchDir;
   if Key = 'bSkipIntroMovies' then
-    Result := CommandLineOptions.bSkipIntroMovies;
+    Result := LocalOptions.bSkipIntroMovies;
   if Key = 'bMaxFps' then
-    Result := CommandLineOptions.bMaxFps;
+    Result := LocalOptions.bMaxFps;
   if Key = 'iMaxFps' then
-    Result := CommandLineOptions.iMaxFps;
+    Result := LocalOptions.iMaxFps;
   if Key = 'bAllWeaponsUnlock' then
-    Result := CommandLineOptions.bAllWeaponsUnlock;
+    Result := LocalOptions.bAllWeaponsUnlock;
   if Key = 'bUnlimitedReliability' then
-    Result := CommandLineOptions.bUnlimitedReliability;
+    Result := LocalOptions.bUnlimitedReliability;
   if Key = 'bUnlimitedAmmo' then
-    Result := CommandLineOptions.bUnlimitedAmmo;
+    Result := LocalOptions.bUnlimitedAmmo;
   if Key = 'bGodMode' then
-    Result := CommandLineOptions.bGodMode;
+    Result := LocalOptions.bGodMode;
   if Key = 'bZombieAI' then
-    Result := CommandLineOptions.bZombieAI;
+    Result := LocalOptions.bZombieAI;
   if Key = 'bExec' then
-    Result := CommandLineOptions.bExec;
+    Result := LocalOptions.bExec;
   if Key = 'sExec' then
-    Result := CommandLineOptions.sExec;
+    Result := LocalOptions.sExec;
 end;
 
 procedure SetOptionByKey(Key: string; Value: Variant);
+var
+  TempString: string;
 begin
   if Key = 'bJackalTapesFix' then
     Options.bJackalTapesFix := Value;
@@ -854,26 +888,30 @@ begin
     Options.bFOV := Value;
   if Key = 'iFOV' then
     Options.iFOV := Value;
+  if Key = 'bPatchDir' then
+    Options.bPatchDir := Value;
+  if Key = 'sPatchDir' then
+    LocalOptions.sPatchDir := Value;
   if Key = 'bSkipIntroMovies' then
-    CommandLineOptions.bSkipIntroMovies := Value;
+    LocalOptions.bSkipIntroMovies := Value;
   if Key = 'bMaxFps' then
-    CommandLineOptions.bMaxFps := Value;
+    LocalOptions.bMaxFps := Value;
   if Key = 'iMaxFps' then
-    CommandLineOptions.iMaxFps := Value;
+    LocalOptions.iMaxFps := Value;
   if Key = 'bAllWeaponsUnlock' then
-    CommandLineOptions.bAllWeaponsUnlock := Value;
+    LocalOptions.bAllWeaponsUnlock := Value;
   if Key = 'bUnlimitedReliability' then
-    CommandLineOptions.bUnlimitedReliability := Value;
+    LocalOptions.bUnlimitedReliability := Value;
   if Key = 'bUnlimitedAmmo' then
-    CommandLineOptions.bUnlimitedAmmo := Value;
+    LocalOptions.bUnlimitedAmmo := Value;
   if Key = 'bGodMode' then
-    CommandLineOptions.bGodMode := Value;
+    LocalOptions.bGodMode := Value;
   if Key = 'bZombieAI' then
-    CommandLineOptions.bZombieAI := Value;
+    LocalOptions.bZombieAI := Value;
   if Key = 'bExec' then
-    CommandLineOptions.bExec := Value;
+    LocalOptions.bExec := Value;
   if Key = 'sExec' then
-    CommandLineOptions.sExec := Value;
+    LocalOptions.sExec := Value;
 end;
 
 end.

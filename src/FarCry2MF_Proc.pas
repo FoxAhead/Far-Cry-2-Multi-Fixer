@@ -8,7 +8,7 @@ var
 
 procedure RaiseWithLastError(ErrorCode: Integer);
 
-procedure WriteMemory(HProcess: THandle; Address: Integer; Opcodes: array of Byte; ProcAddress: Pointer = nil);
+procedure WriteMemory(HProcess: THandle; Address: Integer; Opcodes: array of Byte; ProcAddress: Pointer = nil; AbsoluteAddr: Boolean = False);
 
 implementation
 
@@ -23,7 +23,7 @@ begin
   raise Exception.Create('');
 end;
 
-procedure WriteMemory(HProcess: THandle; Address: Integer; Opcodes: array of Byte; ProcAddress: Pointer);
+procedure WriteMemory(HProcess: THandle; Address: Integer; Opcodes: array of Byte; ProcAddress: Pointer; AbsoluteAddr: Boolean);
 var
   SizeOP: Integer;
   BytesWritten: Cardinal;
@@ -42,7 +42,10 @@ begin
   end;
   if ProcAddress <> nil then
   begin
-    Offset := Integer(ProcAddress) - Address - 4 - SizeOP;
+    if AbsoluteAddr then
+      Offset := Integer(ProcAddress)
+    else
+      Offset := Integer(ProcAddress) - Address - 4 - SizeOP;
     if not WriteProcessMemory(HProcess, Pointer(Address + SizeOP), @Offset, 4, BytesWritten) then
       RaiseWithLastError(4);
   end;
