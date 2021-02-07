@@ -126,9 +126,11 @@ procedure TrySetFarCry2ExeName(Path: string);
 
 function CalcFileCRC32(FileName: string): Cardinal;
 
-function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal; DuniaDllSize: Integer): Integer;
+function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal; DuniaDllSize: Integer; VersionStringOffset: Integer): Integer;
 
 function GetGameVersion(): Integer;
+
+function SearchFileForBytes(const FileName: string; BytesBuffer: array of Byte): Integer;
 
 //--------------------------------------------------------------------------------------------------
 implementation
@@ -638,9 +640,9 @@ begin
           FileName := Path + SearchRec.Name;
           if SameText(SearchRec.Name, 'FarCry2.exe') then
             CurrentMatch := CurrentMatch + 1;
-          if IndexByGameFilesInfo(SearchRec.Size, 0, 0) > 0 then
+          if IndexByGameFilesInfo(SearchRec.Size, 0, 0, 0) > 0 then
             CurrentMatch := CurrentMatch + 2;
-          if IndexByGameFilesInfo(0, CalcFileCRC32(FileName), 0) > 0 then
+          if IndexByGameFilesInfo(0, CalcFileCRC32(FileName), 0, 0) > 0 then
             CurrentMatch := CurrentMatch + 4;
           if CurrentMatch > BestMatch then
           begin
@@ -667,7 +669,7 @@ begin
   Result := TCRC32.Calc(FileBuffer, Length(FileBuffer));
 end;
 
-function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal; DuniaDllSize: Integer): Integer;
+function IndexByGameFilesInfo(FarCry2ExeSize: Integer; FarCry2ExeCRC32: Cardinal; DuniaDllSize: Integer; VersionStringOffset: Integer): Integer;
 var
   i: Integer;
 begin
@@ -675,9 +677,10 @@ begin
   for i := Low(GameFilesInfo) to High(GameFilesInfo) do
   begin
 {(*}
-    if (FarCry2ExeSize  <> 0) and (GameFilesInfo[i].FarCry2ExeSize  = FarCry2ExeSize)  or
-       (FarCry2ExeCRC32 <> 0) and (GameFilesInfo[i].FarCry2ExeCRC32 = FarCry2ExeCRC32) or
-       (DuniaDllSize    <> 0) and (GameFilesInfo[i].DuniaDllSize    = DuniaDllSize) then
+    if (FarCry2ExeSize      <> 0)  and (GameFilesInfo[i].FarCry2ExeSize      = FarCry2ExeSize)  or
+       (FarCry2ExeCRC32     <> 0)  and (GameFilesInfo[i].FarCry2ExeCRC32     = FarCry2ExeCRC32) or
+       (DuniaDllSize        <> 0)  and (GameFilesInfo[i].DuniaDllSize        = DuniaDllSize)    or
+       (VersionStringOffset <> 0 ) and (GameFilesInfo[i].VersionStringOffset = VersionStringOffset) then
 {*)}
     begin
       Result := i;
@@ -696,11 +699,23 @@ var
 begin
   Result := 0;
   DuniaDllSize := GetFileSize(DuniaDllName);
-  IndexByDuniaDll := IndexByGameFilesInfo(0, 0, DuniaDllSize);
+  IndexByDuniaDll := IndexByGameFilesInfo(0, 0, DuniaDllSize, 0);
   if (IndexByDuniaDll >= Low(GameFilesInfo)) and (IndexByDuniaDll <= High(GameFilesInfo)) then
     VersionStringOffset := GameFilesInfo[IndexByDuniaDll].VersionStringOffset
   else
-    raise Exception.Create(Format('Wrong size of Dunia.dll file (%d). Game version v1.03 supported only.', [DuniaDllSize]));
+  begin
+    // No size match. Then try to find version string
+    VersionStringOffset := SearchFileForBytes(DuniaDllName, [$76, $65, $72, $73, $69, $6F, $6E, $2E, $69, $6E, $69]); //version.ini
+    if VersionStringOffset > 0 then
+    begin
+      VersionStringOffset := VersionStringOffset + 12;
+      IndexByDuniaDll := IndexByGameFilesInfo(0, 0, 0, VersionStringOffset);
+    end;
+    if (IndexByDuniaDll >= Low(GameFilesInfo)) and (IndexByDuniaDll <= High(GameFilesInfo)) then
+      VersionStringOffset := GameFilesInfo[IndexByDuniaDll].VersionStringOffset
+    else
+      raise Exception.Create(Format('Wrong size of Dunia.dll file (%d). Game version v1.03 supported only.', [DuniaDllSize]));
+  end;
   FileStream := TFileStream.Create(DuniaDllName, fmOpenRead or fmShareDenyNone);
   FileStream.Seek(VersionStringOffset, soFromBeginning);
   FileStream.ReadBuffer(UpdateVersion, 4);
@@ -708,6 +723,34 @@ begin
   if UpdateVersion <> '1.03' then
     raise Exception.Create('Wrong version of Dunia.dll file. Game version v1.03 supported only.');
   Result := IndexByDuniaDll;
+end;
+
+function SearchFileForBytes(const FileName: string; BytesBuffer: array of Byte): Integer;
+var
+  FileBuffer: TByteDynArray;
+  FileSize: Integer;
+  PatternSize: Integer;
+  i, j: Integer;
+  FileStream: TFileStream;
+  BytesRead: Integer;
+begin
+  Result := -1;
+  FileStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyNone);
+  SetLength(FileBuffer, FileStream.Size);
+  BytesRead := FileStream.Read(Pointer(FileBuffer)^, FileStream.Size);
+  FileStream.Free;
+  FileSize := Length(FileBuffer);
+  PatternSize := Length(BytesBuffer);
+  for i := 0 to FileSize - PatternSize do
+  begin
+    j := 0;
+    while (FileBuffer[i + j] = BytesBuffer[j]) and (j < PatternSize) do
+      Inc(j);
+    if j = PatternSize then               //FOUND
+    begin
+      Result := i;
+    end;
+  end;
 end;
 
 procedure FormOptionsAddSubItems(Nodes: IXMLNodeList; var SubItems: TOptionSubItems);
