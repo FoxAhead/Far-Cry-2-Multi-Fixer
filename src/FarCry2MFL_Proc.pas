@@ -43,6 +43,8 @@ type
     bZombieAI: Boolean;
     bExec: Boolean;
     sExec: string;
+    bAffinity: Boolean;
+    iAffinity: Integer;
   end;
 
   TGameFilesInfo = record
@@ -426,6 +428,9 @@ begin
     ZeroMemory(@ProcessInformation, SizeOf(ProcessInformation));
     if not CreateProcess(PAnsiChar(FileName), PAnsiChar(CommandLine), nil, nil, False, CREATE_SUSPENDED, nil, PAnsiChar(Path), StartupInfo, ProcessInformation) then
       raise Exception.Create('CreateProcess: ' + IntToStr(GetLastError()));
+    if CommandLineOptions.bAffinity then
+       if not SetProcessAffinityMask(ProcessInformation.hProcess, CommandLineOptions.iAffinity) then
+          raise Exception.Create('SetProcessAffinityMask: ' + IntToStr(GetLastError()));
     EntryPointAddress := $004014EC;
     ZeroMemory(@Inject, SizeOf(Inject));
     Inject.PushCommand := $68;
@@ -881,6 +886,10 @@ begin
     Result := CommandLineOptions.bExec;
   if Key = 'sExec' then
     Result := CommandLineOptions.sExec;
+  if Key = 'bAffinity' then
+    Result := CommandLineOptions.bAffinity;
+  if Key = 'iAffinity' then
+    Result := CommandLineOptions.iAffinity;
 end;
 
 procedure SetOptionByKey(Key: string; Value: Variant);
@@ -917,6 +926,10 @@ begin
     CommandLineOptions.bExec := Value;
   if Key = 'sExec' then
     CommandLineOptions.sExec := Value;
+  if Key = 'bAffinity' then
+    CommandLineOptions.bAffinity := Value;
+  if Key = 'iAffinity' then
+    CommandLineOptions.iAffinity := Value;
 end;
 
 end.

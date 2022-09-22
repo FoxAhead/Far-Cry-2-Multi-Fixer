@@ -20,9 +20,9 @@ https://farcry.fandom.com/wiki/Machete" default="1"/>
 	<section name="Launch Options" description="Launch options added to the command line">
 		<boolean key="bSkipIntroMovies" name="Skip Intro Movies" description="-GameProfile_SkipIntroMovies 1
 Skip Intro Movies for faster game starting." default="1"/>
-		<boolean key="bMaxFps" name="Max Fps" description="-RenderProfile_MaxFps ##
+		<boolean key="bMaxFps" name="Max FPS" description="-RenderProfile_MaxFps ##
 Limit Maximum FPS to avoid game's physical engine glitches like jumping NPCs and others. If you see screen-tearing try using MaxFps = 62 instead of 60." default="1">
-			<integer key="iMaxFps" name="Max Fps" default="60"/>
+			<integer key="iMaxFps" name="Max FPS" default="60"/>
 		</boolean>
 		<boolean key="bAllWeaponsUnlock" name="All Weapons Unlock" description="-GameProfile_AllWeaponsUnlock 1
 Unlock all weapons at the bazaar, depending on what part of the map you are in at the time." default="0"/>
@@ -38,6 +38,17 @@ NPC will just freeze ignoring the player." default="0"/>
 Runs a console command 'batchfile'. This text file can contain list of console commands and will autorun at game start. Unless full path specified, the file must be located at:
 'C:\Users\USERNAME\Documents\My Games\Far Cry 2'" default="0">
 			<string key="sExec" name="Batch file name" default=""/>
+		</boolean>
+		<boolean key="bAffinity" name="Processor affinity" description="Sets a processor affinity mask
+Limits the use of cores by the game process. Can help run the game on modern fast systems with lots of cores.
+The integer value represents the mask. So the value is:
+1 to use only CPU0
+2 to use only CPU1
+3 to use both CPU0 and CPU1
+...
+15 to use CPU0 + CPU1 + CPU2 + CPU3
+and so on." default="0">
+			<integer key="iAffinity" name="Affinity mask" default="1"/>
 		</boolean>
 	</section>
 </options>
