@@ -41,7 +41,7 @@ uses
 
 procedure TFormProgress.StartTimer(TimeOut: Integer);
 begin
-  ProgressBar1.Max := TimeOut * 1000 div Timer1.Interval;
+  ProgressBar1.Max := TimeOut * 1000 div Integer(Timer1.Interval);
   Timer1.Enabled := True;
 end;
 
